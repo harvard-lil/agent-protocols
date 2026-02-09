@@ -1,0 +1,6 @@
+# GitHub Pages — serve the repo root as a static site (no Jekyll processing)
+include:
+  - "*.html"
+  - "*.css"
+  - "*.js"
+  - "*.yaml"
