@@ -1,6 +1,19 @@
 title: The Agent Protocol Tech Tree
 subtitle: How open standards for AI agents emerged, layer by layer
 
+# Actor icon images — keyed by actor type, referenced in animations.
+# Generate with: cd tools && uv run generate-images --patch-data
+actor_icons:
+  app: images/actor-app.png
+  model: images/actor-model.png
+  server: images/actor-server.png
+  agent: images/actor-agent.png
+  repo: images/actor-repo.png
+  website: images/actor-website.png
+  registry: images/actor-registry.png
+  merchant: images/actor-merchant.png
+  skill: images/actor-skill.png
+
 eras:
   - col: 0
     label: Inference
@@ -23,6 +36,7 @@ protocols:
   # ── Layer 1: Inference ─────────────────────────────────────────
   - id: inference-api
     title: Inference API
+    icon: images/icon-inference-api.png
     icon_alt: ">_"
     tagline: A stable way to talk to any model
     tree:
@@ -138,6 +152,7 @@ protocols:
   # ── Layer 2: Tool Use ──────────────────────────────────────────
   - id: tool-calling
     title: Tool Calling
+    icon: images/icon-tool-calling.png
     icon_alt: "f(x)"
     tagline: Models that can take action
     tree:
@@ -256,6 +271,7 @@ protocols:
   # ── Layer 3: Schemas ───────────────────────────────────────────
   - id: tool-schemas
     title: Tool Schemas
+    icon: images/icon-tool-schemas.png
     icon_alt: "{}"
     tagline: Machine-readable tool contracts
     tree:
@@ -349,6 +365,7 @@ protocols:
   # ── Layer 4: Tool Connectivity ─────────────────────────────────
   - id: mcp
     title: MCP
+    icon: images/icon-mcp.png
     icon_alt: "<>"
     tagline: One protocol for every tool
     tree:
@@ -482,6 +499,7 @@ protocols:
   # ── Layer 5: Instruction Surfaces ──────────────────────────────
   - id: agents-md
     title: AGENTS.md
+    icon: images/icon-agents-md.png
     icon_alt: "#"
     tagline: Project-local guidance for agents
     tree:
@@ -577,6 +595,7 @@ protocols:
 
   - id: llms-txt
     title: llms.txt
+    icon: images/icon-llms-txt.png
     icon_alt: "//"
     tagline: AI-readable site index
     tree:
@@ -671,6 +690,7 @@ protocols:
 
   - id: agent-skills
     title: Agent Skills
+    icon: images/icon-agent-skills.png
     icon_alt: "pkg"
     tagline: Portable capability packages
     tree:
@@ -768,6 +788,7 @@ protocols:
   # ── Layer 6: Agent-to-Agent ────────────────────────────────────
   - id: a2a
     title: A2A
+    icon: images/icon-a2a.png
     icon_alt: "<>"
     tagline: Agents working across frameworks
     tree:
@@ -890,6 +911,7 @@ protocols:
   # ── Layer 7: Domain Protocols ──────────────────────────────────
   - id: ucp
     title: UCP
+    icon: images/icon-ucp.png
     icon_alt: "$"
     tagline: Universal agent commerce
     tree:
@@ -1005,6 +1027,7 @@ protocols:
 
   - id: agent-identity
     title: Agent Identity
+    icon: images/icon-agent-identity.png
     icon_alt: "id"
     tagline: Verified agents on the open web
     tree:

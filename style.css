@@ -91,7 +91,6 @@ body {
   padding: 24px 40px;
   display: flex;
   flex-direction: column;
-  align-items: center;
 }
 
 /* ── Era Labels ────────────────────────────────────────────────── */
@@ -99,6 +98,8 @@ body {
   display: grid;
   gap: 0;
   margin-bottom: 8px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .tree-era {
@@ -114,6 +115,8 @@ body {
 /* ── Tree Grid ─────────────────────────────────────────────────── */
 .tree-wrapper {
   position: relative;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .tree-grid {
@@ -365,12 +368,13 @@ body {
 .scrolly__graphic {
   flex: 3;
   position: sticky;
-  top: calc(var(--header-h) + 16px);
-  min-height: 380px;
+  top: calc(50vh - 190px);
+  height: 380px;
   border: 2px solid var(--border);
   background: var(--bg);
   padding: 20px;
   align-self: flex-start;
+  overflow: hidden;
 }
 
 .scrolly__steps {
@@ -432,7 +436,8 @@ body {
 .anim-stage {
   display: flex;
   flex-direction: column;
-  min-height: 320px;
+  height: 100%;
+  position: relative;
 }
 
 /* Actor strip */

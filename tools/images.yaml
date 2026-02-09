@@ -1,0 +1,233 @@
+# ================================================================
+#  Image Generation Manifest — Agent Protocol Tech Tree
+#
+#  Style placeholders: use {style_name} in `prompt` fields.
+#  The generate_images.py harness resolves them before sending
+#  to the image generation backend.
+# ================================================================
+
+styles:
+  general: >-
+    Flat sprite on a transparent background. Brutalist pixel-art aesthetic
+    that mixes old-school 16-bit game sprites with posterized
+    high-resolution detail. Limited palette: mostly black and white with
+    one bold accent color per icon. Hard 2 px outlines, no gradients,
+    no drop shadows, no anti-aliased edges. Crisp and punchy.
+
+  tech_icon: >-
+    {general} Tiny square icon, 128×128 px rendered for display at 28×28.
+    Chunky, blocky, unmistakably legible at thumbnail size. A single bold
+    symbol filling the frame. Maximum contrast. Think "16-bit toolbar
+    icon" — every pixel counts.
+
+  actor_icon: >-
+    {general} Square character portrait, 256×256 px rendered for display
+    at 56×56. Friendlier and more expressive than the tech icons. Retro
+    game character feel with clean posterized edges — approachable but
+    technical. A little personality: slight tilt, simple expression, or
+    posture that conveys the role. Old-school game meets posterized
+    high-rez poster mood.
+
+
+# ════════════════════════════════════════════════════════════════
+#  Tech Icons — one per protocol node in the tree view
+#  Small, chunky, focused on distinct legibility
+# ════════════════════════════════════════════════════════════════
+
+images:
+
+  # ── Inference API ────────────────────────────────────────────
+  - filename: icon-inference-api.png
+    category: tech
+    data_id: inference-api
+    style: tech_icon
+    subject: >-
+      A blinking command-line terminal prompt — the classic ">_" cursor.
+      Bright green accent on black terminal background. Represents
+      calling a model API.
+
+  # ── Tool Calling ────────────────────────────────────────────
+  - filename: icon-tool-calling.png
+    category: tech
+    data_id: tool-calling
+    style: tech_icon
+    subject: >-
+      A bold "f(x)" function symbol — the letter f with parentheses
+      and an x. Orange accent. Represents structured tool invocation
+      by a language model.
+
+  # ── Tool Schemas ────────────────────────────────────────────
+  - filename: icon-tool-schemas.png
+    category: tech
+    data_id: tool-schemas
+    style: tech_icon
+    subject: >-
+      A pair of curly braces "{ }" with a small nested key-value hint
+      inside. Blue accent. Represents machine-readable JSON / OpenAPI
+      schema contracts.
+
+  # ── MCP ─────────────────────────────────────────────────────
+  - filename: icon-mcp.png
+    category: tech
+    data_id: mcp
+    style: tech_icon
+    subject: >-
+      A stylized plug-and-socket connector — two angular brackets
+      facing each other "< >" with a spark where they meet. Purple
+      accent. Represents the Model Context Protocol connecting clients
+      to tool servers.
+
+  # ── AGENTS.md ───────────────────────────────────────────────
+  - filename: icon-agents-md.png
+    category: tech
+    data_id: agents-md
+    style: tech_icon
+    subject: >-
+      A bold Markdown hash "#" heading symbol on a small document page.
+      Teal accent. Represents a Markdown instruction file that agents
+      read on arrival.
+
+  # ── llms.txt ────────────────────────────────────────────────
+  - filename: icon-llms-txt.png
+    category: tech
+    data_id: llms-txt
+    style: tech_icon
+    subject: >-
+      A small text-file icon with two forward slashes "//" and a few
+      ruled lines hinting at a table of contents. Yellow accent.
+      Represents an AI-readable site index.
+
+  # ── Agent Skills ────────────────────────────────────────────
+  - filename: icon-agent-skills.png
+    category: tech
+    data_id: agent-skills
+    style: tech_icon
+    subject: >-
+      A chunky shipping box / package labeled "PKG" with a small
+      lightning bolt on the side. Red accent. Represents a portable
+      skill package an agent can load.
+
+  # ── A2A ─────────────────────────────────────────────────────
+  - filename: icon-a2a.png
+    category: tech
+    data_id: a2a
+    style: tech_icon
+    subject: >-
+      Two small square robot-face outlines facing each other with a
+      double-headed arrow between them. Cyan accent. Represents
+      Agent-to-Agent interoperability.
+
+  # ── UCP ─────────────────────────────────────────────────────
+  - filename: icon-ucp.png
+    category: tech
+    data_id: ucp
+    style: tech_icon
+    subject: >-
+      A bold dollar sign "$" inside a shopping cart outline. Green
+      accent. Represents universal agentic commerce — agents that shop.
+
+  # ── Agent Identity ──────────────────────────────────────────
+  - filename: icon-agent-identity.png
+    category: tech
+    data_id: agent-identity
+    style: tech_icon
+    subject: >-
+      A small ID badge with a key-hole or lock symbol. White badge on
+      dark background. Gold accent on the lock. Represents
+      cryptographic agent identity on the web.
+
+
+# ════════════════════════════════════════════════════════════════
+#  Actor Icons — one per actor type in the protocol animations
+#  Bigger, friendlier, personality-forward
+# ════════════════════════════════════════════════════════════════
+
+  # ── APP (Your App) ──────────────────────────────────────────
+  - filename: actor-app.png
+    category: actor
+    actor_type: app
+    style: actor_icon
+    subject: >-
+      A friendly desktop application window — title bar with three
+      dots and a content area showing a blinking cursor. Rounded
+      posture. Blue accent. The "protagonist" of every demo.
+
+  # ── LLM (Language Model) ────────────────────────────────────
+  - filename: actor-model.png
+    category: actor
+    actor_type: model
+    style: actor_icon
+    subject: >-
+      A glowing brain or neural-net node cluster inside a square chip
+      outline. Radiating small lightning sparks. Purple accent.
+      Represents the language model doing inference.
+
+  # ── SRV (Server / Service) ─────────────────────────────────
+  - filename: actor-server.png
+    category: actor
+    actor_type: server
+    style: actor_icon
+    subject: >-
+      A chunky rack server with blinking status LEDs on the front
+      panel. Sturdy and boxy. Green accent on the LEDs. Represents
+      an API server or tool server.
+
+  # ── AGT (Agent) ─────────────────────────────────────────────
+  - filename: actor-agent.png
+    category: actor
+    actor_type: agent
+    style: actor_icon
+    subject: >-
+      A friendly robot character — boxy head, antenna, simple dot eyes
+      and a small determined mouth. One hand raised as if greeting.
+      Orange accent. The versatile autonomous agent.
+
+  # ── REPO (Code Repository) ─────────────────────────────────
+  - filename: actor-repo.png
+    category: actor
+    actor_type: repo
+    style: actor_icon
+    subject: >-
+      A folder icon with a small Git branch diagram on the front —
+      two dots connected by forking lines. Teal accent on the branch.
+      Represents a code repository.
+
+  # ── WEB (Website) ───────────────────────────────────────────
+  - filename: actor-website.png
+    category: actor
+    actor_type: website
+    style: actor_icon
+    subject: >-
+      A browser window with a small globe or world-wide-web icon in
+      the address bar and simple horizontal content lines in the body.
+      Yellow accent. Represents a documentation website.
+
+  # ── REG (Key Registry) ─────────────────────────────────────
+  - filename: actor-registry.png
+    category: actor
+    actor_type: registry
+    style: actor_icon
+    subject: >-
+      A filing cabinet or ledger book with a large key symbol on the
+      front. Secure and official-looking. Gold accent on the key.
+      Represents a public-key registry or directory.
+
+  # ── SHOP (Merchant) ────────────────────────────────────────
+  - filename: actor-merchant.png
+    category: actor
+    actor_type: merchant
+    style: actor_icon
+    subject: >-
+      A friendly storefront awning over a shop door — the classic
+      market stall look. A small price tag or shopping bag visible.
+      Green accent. Represents a merchant in commerce flows.
+
+  # ── SKILL (Skill Package) ──────────────────────────────────
+  - filename: actor-skill.png
+    category: actor
+    actor_type: skill
+    style: actor_icon
+    subject: >-
+      An open book or scroll with a small lightning bolt rising from
+      its pages — knowledge that comes alive. Red accent on the bolt.
+      Represents a portable skill package.

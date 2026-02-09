@@ -9,6 +9,8 @@ let currentView = null;   // 'tree' | 'detail'
 let currentProtocolId = null;
 let activeSceneIndex = 0;
 let scrollObserver = null;
+let fadeTimeout = null;
+let scrollRafId = null;
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 // ── Grid Constants ────────────────────────────────────────────────
@@ -49,6 +51,14 @@ function cleanup() {
   if (scrollObserver) {
     scrollObserver.disconnect();
     scrollObserver = null;
+  }
+  if (fadeTimeout) {
+    clearTimeout(fadeTimeout);
+    fadeTimeout = null;
+  }
+  if (scrollRafId) {
+    cancelAnimationFrame(scrollRafId);
+    scrollRafId = null;
   }
 }
 
@@ -167,6 +177,20 @@ function showTree() {
       <footer class="tree-footer">Click a protocol to explore how it works</footer>
     </div>`;
 
+  // Center the tree scroll on the root node
+  const treeContainer = document.querySelector('.tree-container');
+  if (treeContainer) {
+    // Find the first protocol (root of the tree) and center on it
+    const rootProto = protocols.find(p => p.tree.depends_on.length === 0) || protocols[0];
+    const rootCenterX = rootProto.tree.col * CELL_W + CELL_W / 2;
+    const wrapper = document.querySelector('.tree-wrapper');
+    if (wrapper) {
+      const wrapperLeft = wrapper.offsetLeft;
+      const targetScroll = wrapperLeft + rootCenterX - treeContainer.clientWidth / 2;
+      treeContainer.scrollLeft = Math.max(0, targetScroll);
+    }
+  }
+
   // Attach click handlers
   document.querySelectorAll('.tree-node').forEach(node => {
     node.addEventListener('click', () => navigateTo(node.dataset.id));
@@ -270,7 +294,7 @@ function showDetail(protocolId) {
     document.querySelectorAll('.step').forEach(step => {
       step.addEventListener('click', () => {
         const idx = parseInt(step.dataset.scene, 10);
-        setActiveScene(proto, idx);
+        transitionToScene(proto, idx);
         document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
         step.classList.add('active');
       });
@@ -384,28 +408,94 @@ function renderMessages(scene, visibleIds, numActors) {
   container.innerHTML = html;
 }
 
-// ── Scroll Observer ───────────────────────────────────────────────
-function setupScrollObserver(proto) {
-  const steps = document.querySelectorAll('.step');
-  if (!steps.length) return;
+// ── Scroll-based Scene Switching ──────────────────────────────────
 
-  scrollObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const idx = parseInt(entry.target.dataset.scene, 10);
-        if (idx !== activeSceneIndex) {
-          setActiveScene(proto, idx);
-        }
-        // Update active step styling
-        steps.forEach(s => s.classList.remove('active'));
-        entry.target.classList.add('active');
-      }
-    });
-  }, {
-    rootMargin: '-30% 0px -50% 0px'
+function transitionToScene(proto, index) {
+  if (index === activeSceneIndex) return;
+
+  const root = document.getElementById('anim-root');
+  if (!root) { setActiveScene(proto, index); return; }
+
+  // Cancel any pending transition and remove leftover overlay
+  if (fadeTimeout) clearTimeout(fadeTimeout);
+  const oldOverlay = document.getElementById('anim-crossfade');
+  if (oldOverlay) oldOverlay.remove();
+
+  // Update index immediately so scroll handler doesn't retrigger
+  activeSceneIndex = index;
+
+  // Clone current content as a crossfade overlay
+  const overlay = root.cloneNode(true);
+  overlay.id = 'anim-crossfade';
+  // Strip IDs from clone so getElementById still finds the real elements
+  overlay.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+  overlay.style.position = 'absolute';
+  overlay.style.inset = '0';
+  overlay.style.transition = 'opacity 0.5s ease';
+  overlay.style.pointerEvents = 'none';
+  overlay.style.zIndex = '10';
+  overlay.style.background = 'var(--bg)';
+  root.appendChild(overlay);
+
+  // Disable actor transitions so new positions appear instantly (hidden under overlay)
+  root.querySelectorAll('.anim-actor').forEach(a => { a.style.transition = 'none'; });
+
+  // Update the real content underneath the overlay
+  setActiveScene(proto, index);
+
+  // Restore actor transitions then fade out overlay to reveal new scene
+  requestAnimationFrame(() => {
+    root.querySelectorAll('.anim-actor').forEach(a => { a.style.transition = ''; });
+    overlay.style.opacity = '0';
   });
 
-  steps.forEach(step => scrollObserver.observe(step));
+  // Remove overlay after fade completes
+  fadeTimeout = setTimeout(() => {
+    overlay.remove();
+    fadeTimeout = null;
+  }, 550);
+}
+
+function setupScrollObserver(proto) {
+  const graphic = document.querySelector('.scrolly__graphic');
+  const steps = document.querySelectorAll('.step');
+  if (!graphic || !steps.length) return;
+
+  function checkScroll() {
+    scrollRafId = null;
+    const graphicBottom = graphic.getBoundingClientRect().bottom;
+
+    // Active step = last step whose top edge is above the graphic's bottom edge
+    let newIdx = 0;
+    steps.forEach((step, i) => {
+      if (step.getBoundingClientRect().top < graphicBottom) {
+        newIdx = i;
+      }
+    });
+
+    if (newIdx !== activeSceneIndex) {
+      transitionToScene(proto, newIdx);
+      steps.forEach(s => s.classList.remove('active'));
+      steps[newIdx].classList.add('active');
+    }
+  }
+
+  function onScroll() {
+    if (!scrollRafId) {
+      scrollRafId = requestAnimationFrame(checkScroll);
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  checkScroll(); // initial check
+
+  // Compatible with cleanup() which calls .disconnect()
+  scrollObserver = {
+    disconnect: () => {
+      window.removeEventListener('scroll', onScroll);
+      if (scrollRafId) { cancelAnimationFrame(scrollRafId); scrollRafId = null; }
+    }
+  };
 }
 
 // ── Toggle JSON Detail ────────────────────────────────────────────

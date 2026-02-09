@@ -1,0 +1,21 @@
+[project]
+name = "agent-protocols-tools"
+version = "0.1.0"
+description = "Image generation harness for the Agent Protocol Tech Tree"
+requires-python = ">=3.11"
+dependencies = [
+    "pyyaml",
+    "httpx",
+    "rich",
+]
+
+[project.scripts]
+generate-images = "generate_images:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+only-include = ["generate_images.py"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
