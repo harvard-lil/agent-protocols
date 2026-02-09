@@ -55,20 +55,33 @@ function createToolbar() {
 function getToolbarHtml() {
   let html = '<div class="toolbar" id="toolbar">';
   
-  // Edit button (GitHub link)
-  html += `<a class="toolbar-btn" href="https://github.com/jcushman/agent-protocols/" target="_blank" rel="noopener noreferrer" aria-label="Edit on GitHub">
-    <span class="btn-icon">&lt;/&gt;</span> Edit
-  </a>`;
+  // GitHub link
+  html += `<a class="toolbar-link" href="https://github.com/jcushman/agent-protocols/" target="_blank" rel="noopener noreferrer">Github</a>`;
   
   // Fullscreen button (only if supported)
   if (document.fullscreenEnabled || document.webkitFullscreenEnabled) {
-    html += `<button class="toolbar-btn" id="fullscreen-btn" aria-label="Toggle fullscreen">
-      <span class="btn-icon">[ ]</span> Fullscreen
-    </button>`;
+    html += `<span class="toolbar-sep">|</span>`;
+    html += `<button class="toolbar-link" id="fullscreen-btn">Fullscreen</button>`;
   }
   
   html += '</div>';
   return html;
+}
+
+function getAttributionHtml() {
+  return `<div class="attribution">
+    <a href="https://lil.law.harvard.edu/" target="_blank" rel="noopener noreferrer" class="attribution-logo" aria-label="Library Innovation Lab">
+      <svg role="img" width="40" height="56" viewBox="0 0 40 57" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <title>Library Innovation Lab</title>
+        <path d="M0 8.09524H32V56.6667L40 48.5714V0H8L0 8.09524Z" fill="currentColor"></path>
+        <path d="M16 16.1905H8V48.5714H24V40.4762H16V16.1905Z" fill="currentColor"></path>
+      </svg>
+    </a>
+    <div class="attribution-text">
+      <div class="attribution-line">A project of the <a href="https://lil.law.harvard.edu/" target="_blank" rel="noopener noreferrer">Library Innovation Lab</a></div>
+      <div class="attribution-line"><a href="mailto:lil@law.harvard.edu">lil@law.harvard.edu</a></div>
+    </div>
+  </div>`;
 }
 
 function attachToolbarListeners() {
@@ -647,12 +660,15 @@ function showTree() {
   document.getElementById('app').innerHTML = `
     <div class="tree-page">
       <header class="tree-header">
+        <div class="tree-header-top">
+          ${getAttributionHtml()}
+          ${getToolbarHtml()}
+        </div>
         <div class="tree-header-text">
           <h1>${escapeHtml(DATA.title)}</h1>
           <p>${escapeHtml(DATA.subtitle)}</p>
           ${readMoreBtn}
         </div>
-        ${getToolbarHtml()}
       </header>
       <div class="tree-container">
         <div class="tree-wrapper" style="width:${wrapperW}px;height:${wrapperH}px">
