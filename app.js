@@ -5,7 +5,7 @@
 
 // ── Global State ──────────────────────────────────────────────────
 let DATA = null;
-let currentView = null;   // 'tree' | 'detail'
+let currentView = null;   // 'tree' | 'detail' | 'reader'
 let currentProtocolId = null;
 let activeSceneIndex = 0;
 let scrollObserver = null;
@@ -57,6 +57,10 @@ function getToolbarHtml() {
   
   // GitHub link
   html += `<a class="toolbar-link" href="https://github.com/jcushman/agent-protocols/" target="_blank" rel="noopener noreferrer">Github</a>`;
+  
+  // Reader mode link
+  html += `<span class="toolbar-sep">|</span>`;
+  html += `<a class="toolbar-link" href="#reader">Reader</a>`;
   
   // Fullscreen button (only if supported)
   if (document.fullscreenEnabled || document.webkitFullscreenEnabled) {
@@ -126,7 +130,22 @@ function updateFullscreenButton() {
 function route() {
   cleanup();
   const hash = window.location.hash.replace(/^#\/?/, '');
-  if (hash && DATA.technologies.find(t => t.id === hash)) {
+  if (hash === 'reader' || hash.startsWith('reader-')) {
+    // Only re-render reader if not already on the reader page
+    if (currentView !== 'reader') {
+      showReader();
+    } else {
+      // Re-attach scroll spy that was disconnected by cleanup()
+      setupReaderScrollSpy();
+      // Scroll to anchor if present, or top if plain #reader
+      if (hash.startsWith('reader-')) {
+        const el = document.getElementById(hash);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.scrollTo(0, 0);
+      }
+    }
+  } else if (hash && DATA.technologies.find(t => t.id === hash)) {
     showDetail(hash);
   } else {
     showTree();
@@ -649,9 +668,13 @@ function showTree() {
     const cy = cMinY - clPad;
     const cw = (cMaxX - cMinX) + cfg.boxW + clPad * 2;
     const ch = (cMaxY - cMinY) + cfg.boxH + clPad * 2;
+    const hasDesc = cluster.description && cluster.description.trim();
+    const labelTag = hasDesc
+      ? `<button class="tree-group-label tree-group-label--clickable" onclick="showClusterModal('${escapeHtml(cluster.id)}')">${escapeHtml(cluster.label)} <span class="tree-group-info">[?]</span></button>`
+      : `<span class="tree-group-label">${escapeHtml(cluster.label)}</span>`;
     clustersHtml += `
       <div class="tree-group" style="left:${cx}px;top:${cy}px;width:${cw}px;height:${ch}px">
-        <span class="tree-group-label">${escapeHtml(cluster.label)}</span>
+        ${labelTag}
       </div>`;
   });
 
@@ -725,6 +748,46 @@ function showTree() {
 }
 
 // ================================================================
+//  SHARED HELPERS (detail + reader)
+// ================================================================
+
+// Build "unlocked by" / "unlocks" relationship HTML for a given tech
+function buildRelHtml(techId) {
+  const tech = DATA.technologies.find(t => t.id === techId);
+  if (!tech) return '';
+
+  const parentIds = getLayoutParentIds(tech);
+  const childTechs = DATA.technologies.filter(t => {
+    const pids = getLayoutParentIds(t);
+    return pids.includes(techId);
+  });
+
+  if (!parentIds.length && !childTechs.length) return '';
+
+  function renderRelGroup(label, techs) {
+    if (!techs.length) return '';
+    return `
+      <div class="tree-rel tree-rel--${label === 'Unlocked by' ? 'parents' : 'children'}">
+        <span class="tree-rel-label">${label}</span>
+        <div class="tree-rel-nodes">
+          ${techs.map(t => {
+            const iconHtml = t.icon
+              ? `<img src="${escapeHtml(t.icon)}" alt="" class="tree-rel-icon-img">`
+              : `<span class="tree-rel-icon-text">${escapeHtml(t.icon_alt)}</span>`;
+            return `<a href="#${t.id}" class="tree-rel-node">
+              <span class="tree-rel-icon">${iconHtml}</span>
+              <span class="tree-rel-title">${escapeHtml(t.title)}</span>
+            </a>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }
+
+  const parentTechs = parentIds.map(pid => DATA.technologies.find(t => t.id === pid)).filter(Boolean);
+  return `<div class="tree-rel-bar">${renderRelGroup('Unlocked by', parentTechs)}${renderRelGroup('Unlocks', childTechs)}</div>`;
+}
+
+// ================================================================
 //  DETAIL VIEW
 // ================================================================
 
@@ -746,13 +809,21 @@ function showDetail(techId) {
   const detail = tech.detail;
   const hasAnimation = tech.animation && tech.animation.scenes && tech.animation.scenes.length > 0;
 
-  // Links bar
+  // Links list (rendered at bottom)
   let linksHtml = '';
   if (detail.links && detail.links.length) {
-    linksHtml = `<div class="detail-links">${detail.links.map(link =>
-      `<a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer" class="detail-link">${escapeHtml(link.label)}</a>`
-    ).join('')}</div>`;
+    linksHtml = `
+      <div class="detail-section detail-links-section">
+        <div class="section-label">Links</div>
+        <ul class="detail-links-list">
+          ${detail.links.map(link =>
+            `<li><a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer" class="detail-link-item">${escapeHtml(link.label)}</a></li>`
+          ).join('')}
+        </ul>
+      </div>`;
   }
+
+  const relHtml = buildRelHtml(techId);
 
   // How it works (scrollytelling animation) — skip if no animation
   let animHtml = '';
@@ -815,9 +886,8 @@ function showDetail(techId) {
             <h1 class="hero-title">${escapeHtml(tech.title)}</h1>
             <div class="tagline">${escapeHtml(tech.tagline)}</div>
           </div>
+          ${relHtml}
         </div>
-
-        ${linksHtml}
 
         <div class="detail-section">
           <div class="section-label">What it solves</div>
@@ -832,6 +902,8 @@ function showDetail(techId) {
         </div>
 
         ${cycleHtml}
+
+        ${linksHtml}
       </div>
     </div>`;
 
@@ -859,6 +931,348 @@ function showDetail(techId) {
 
   // Scroll to top
   window.scrollTo(0, 0);
+}
+
+// ================================================================
+//  READER MODE
+// ================================================================
+
+function showReader() {
+  currentView = 'reader';
+  currentProtocolId = null;
+  document.title = `Reader — ${DATA.title}`;
+
+  const techs = DATA.technologies;
+  const clusters = DATA.clusters || [];
+
+  // Build cluster lookup: member id -> cluster
+  const memberToCluster = new Map();
+  clusters.forEach(cluster => {
+    (cluster.members || []).forEach(mid => {
+      memberToCluster.set(mid, cluster);
+    });
+  });
+
+  // Group technologies by toc_group (default 0)
+  const groupMap = new Map();
+  techs.forEach(t => {
+    const g = t.toc_group || 0;
+    if (!groupMap.has(g)) groupMap.set(g, []);
+    groupMap.get(g).push(t);
+  });
+  const sortedGroups = [...groupMap.keys()].sort((a, b) => a - b);
+
+  // Build subtrees per group, concatenating roots across groups.
+  // Parent links that cross group boundaries are ignored.
+  const allRoots = [];       // [{type: 'cluster'|'tech', item}]
+  const childrenOf = new Map(); // id -> [{type, item}]
+  const clustersInserted = new Set();
+
+  for (const groupNum of sortedGroups) {
+    const groupTechs = groupMap.get(groupNum);
+    const groupIds = new Set(groupTechs.map(t => t.id));
+
+    groupTechs.forEach(t => {
+      // Only keep parents within this toc_group
+      const parentIds = getLayoutParentIds(t).filter(pid => groupIds.has(pid));
+      const cluster = memberToCluster.get(t.id);
+
+      // Helper: add entry under a parent or as root
+      function addEntry(entry, parentId) {
+        if (parentId) {
+          if (!childrenOf.has(parentId)) childrenOf.set(parentId, []);
+          childrenOf.get(parentId).push(entry);
+        } else {
+          allRoots.push(entry);
+        }
+      }
+
+      if (cluster && !clustersInserted.has(cluster.id)) {
+        // First member of a cluster: insert the cluster node, then tech under it
+        clustersInserted.add(cluster.id);
+        const parentId = parentIds.length > 0 ? parentIds[0] : null;
+        addEntry({ type: 'cluster', item: cluster }, parentId);
+        if (!childrenOf.has(cluster.id)) childrenOf.set(cluster.id, []);
+        childrenOf.get(cluster.id).push({ type: 'tech', item: t });
+      } else if (cluster) {
+        // Subsequent cluster member: add under cluster
+        if (!childrenOf.has(cluster.id)) childrenOf.set(cluster.id, []);
+        childrenOf.get(cluster.id).push({ type: 'tech', item: t });
+      } else if (parentIds.length === 0) {
+        allRoots.push({ type: 'tech', item: t });
+      } else {
+        const pid = parentIds[0];
+        if (!childrenOf.has(pid)) childrenOf.set(pid, []);
+        childrenOf.get(pid).push({ type: 'tech', item: t });
+      }
+    });
+  }
+
+  // ── Render TOC tree recursively ──
+  function renderTocItem(entry) {
+    const id = entry.type === 'cluster' ? entry.item.id : entry.item.id;
+    const label = entry.type === 'cluster' ? entry.item.label : entry.item.title;
+    const kids = childrenOf.get(id) || [];
+    const cssClass = entry.type === 'cluster' ? 'reader-toc-link reader-toc-link--cluster' : 'reader-toc-link';
+    let html = `<li><a href="#reader-${id}" class="${cssClass}" data-target="reader-${id}" onclick="readerScrollTo('reader-${id}'); event.preventDefault();">${escapeHtml(label)}</a>`;
+    if (kids.length) {
+      html += '<ul>' + kids.map(renderTocItem).join('') + '</ul>';
+    }
+    html += '</li>';
+    return html;
+  }
+  const tocHtml = '<ul class="reader-toc-tree">' + allRoots.map(renderTocItem).join('') + '</ul>';
+
+  // ── Render content in tree order ──
+  let sectionsHtml = '';
+
+  function renderContentTree(entries) {
+    entries.forEach(entry => {
+      if (entry.type === 'cluster') {
+        const cluster = entry.item;
+        const hasDesc = cluster.description && cluster.description.trim();
+        sectionsHtml += `
+          <article class="reader-article reader-article--cluster" id="reader-${cluster.id}">
+            <div class="detail-hero">
+              <div class="hero-text">
+                <h2 class="hero-title">${escapeHtml(cluster.label)}</h2>
+              </div>
+            </div>
+            ${hasDesc ? `<div class="detail-section"><div class="section-body">${escapeHtml(cluster.description)}</div></div>` : ''}
+          </article>`;
+      } else {
+        sectionsHtml += renderTechArticle(entry.item);
+      }
+      const kids = childrenOf.get(entry.type === 'cluster' ? entry.item.id : entry.item.id) || [];
+      renderContentTree(kids);
+    });
+  }
+  renderContentTree(allRoots);
+
+  document.getElementById('app').innerHTML = `
+    <div class="reader-page">
+      <header class="detail-header">
+        <button class="back-btn" onclick="navigateTo('')">&larr; Tree</button>
+        ${getToolbarHtml()}
+      </header>
+      <div class="reader-layout">
+        <nav class="reader-toc" id="reader-toc">
+          <div class="reader-toc-header">${escapeHtml(DATA.title)}</div>
+          ${tocHtml}
+        </nav>
+        <main class="reader-content">
+          ${sectionsHtml}
+        </main>
+      </div>
+    </div>`;
+
+  attachToolbarListeners();
+  window.scrollTo(0, 0);
+
+  // Highlight active TOC item on scroll
+  setupReaderScrollSpy();
+}
+
+// ── Tech Article HTML (used by reader mode) ───────────────────────
+function renderTechArticle(tech) {
+  const detail = tech.detail;
+  const hasAnimation = tech.animation && tech.animation.scenes && tech.animation.scenes.length > 0;
+
+  // Icon
+  const heroIconHtml = tech.icon
+    ? `<img src="${escapeHtml(tech.icon)}" alt="${escapeHtml(tech.icon_alt)}" class="hero-icon-img">`
+    : escapeHtml(tech.icon_alt);
+
+  // Links (rendered at bottom)
+  let linksHtml = '';
+  if (detail.links && detail.links.length) {
+    linksHtml = `
+      <div class="detail-section detail-links-section">
+        <div class="section-label">Links</div>
+        <ul class="detail-links-list">
+          ${detail.links.map(link =>
+            `<li><a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer" class="detail-link-item">${escapeHtml(link.label)}</a></li>`
+          ).join('')}
+        </ul>
+      </div>`;
+  }
+
+  // Static animation scenes
+  let scenesHtml = '';
+  if (hasAnimation) {
+    const scenes = tech.animation.scenes;
+    scenesHtml = `
+      <div class="detail-section">
+        <div class="section-label">How it works</div>
+        <div class="reader-scenes">
+          ${scenes.map((scene, i) => renderStaticScene(scene, tech.animation.actors, i, scenes.length, tech.id)).join('')}
+        </div>
+      </div>`;
+  }
+
+  // Virtuous cycle
+  let cycleHtml = '';
+  if (detail.virtuous_cycle && detail.virtuous_cycle.length) {
+    cycleHtml = `
+      <div class="detail-section">
+        <div class="section-label">The virtuous cycle</div>
+        <ul class="virtuous-cycle">
+          ${detail.virtuous_cycle.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
+        </ul>
+      </div>`;
+  }
+
+  const relHtml = buildRelHtml(tech.id);
+
+  return `
+    <article class="reader-article" id="reader-${tech.id}">
+      <div class="detail-hero">
+        <div class="hero-icon" aria-hidden="true">${heroIconHtml}</div>
+        <div class="hero-text">
+          <h2 class="hero-title"><a href="#${tech.id}" class="reader-detail-link">${escapeHtml(tech.title)}</a></h2>
+          <div class="tagline">${escapeHtml(tech.tagline)}</div>
+        </div>
+        ${relHtml}
+      </div>
+
+      <div class="detail-section">
+        <div class="section-label">What it solves</div>
+        <div class="section-body">${escapeHtml(detail.what_it_solves)}</div>
+      </div>
+
+      ${scenesHtml}
+
+      <div class="detail-section">
+        <div class="section-label">How it&rsquo;s standardizing</div>
+        <div class="section-body">${escapeHtml(detail.how_its_standardizing)}</div>
+      </div>
+
+      ${cycleHtml}
+
+      ${linksHtml}
+    </article>`;
+}
+
+function renderStaticScene(scene, allActors, sceneIdx, totalScenes, techId) {
+  const visibleIds = scene.actors_visible;
+  const n = visibleIds.length;
+
+  // Actors
+  let actorsHtml = '<div class="anim-actors">';
+  allActors.forEach(actor => {
+    const visibleIdx = visibleIds.indexOf(actor.id);
+    if (visibleIdx < 0) return;
+
+    const leftPct = ((visibleIdx + 0.5) / n) * 100;
+    const iconSrc = DATA.actor_icons && DATA.actor_icons[actor.type];
+    const iconContent = iconSrc
+      ? `<img src="${escapeHtml(iconSrc)}" alt="${escapeHtml(actorIconText(actor.type))}" class="actor-icon-img">`
+      : escapeHtml(actorIconText(actor.type));
+
+    actorsHtml += `
+      <div class="anim-actor" style="left:${leftPct}%;opacity:1;">
+        <div class="actor-icon">${iconContent}</div>
+        <div class="actor-label">${escapeHtml(actor.label)}</div>
+      </div>`;
+  });
+  actorsHtml += '</div>';
+
+  // Messages
+  let msgsHtml = '<div class="anim-messages">';
+  scene.messages.forEach((msg, mi) => {
+    const fromIdx = visibleIds.indexOf(msg.from);
+    const toIdx = visibleIds.indexOf(msg.to);
+    if (fromIdx < 0 || toIdx < 0) return;
+
+    const fromPct = ((fromIdx + 0.5) / n) * 100;
+    const toPct = ((toIdx + 0.5) / n) * 100;
+    const leftPct = Math.min(fromPct, toPct);
+    const widthPct = Math.abs(toPct - fromPct);
+    const direction = toPct > fromPct ? 'right' : 'left';
+
+    const hasPreview = msg.json_preview && msg.json_preview.trim();
+    const detailContent = (msg.json_full && msg.json_full.trim()) || msg.json_preview || '';
+    const detailId = `reader-msg-${techId}-${sceneIdx}-${mi}`;
+
+    msgsHtml += `
+      <div class="anim-message">
+        <div class="msg-label" style="margin-left:${leftPct}%;width:${widthPct}%">
+          ${escapeHtml(msg.label)}
+        </div>
+        <div class="msg-arrow" style="margin-left:${leftPct}%;width:${widthPct}%">
+          <div class="msg-arrow-head ${direction}"></div>
+        </div>
+        ${hasPreview ? `
+          <div class="msg-preview expandable" style="margin-left:${Math.max(0, leftPct - 5)}%;width:${Math.min(100, widthPct + 10)}%"
+               onclick="toggleDetail('${detailId}', '${escapeHtml(msg.label).replace(/'/g, "\\'")}'); event.stopPropagation();" onkeydown="if(event.key==='Enter'){toggleDetail('${detailId}', '${escapeHtml(msg.label).replace(/'/g, "\\'")}'); event.stopPropagation();}" role="button" tabindex="0" title="Click to expand">
+            <code>${escapeHtml(msg.json_preview)}</code> <span class="expand-hint">[+]</span>
+          </div>
+          <div class="msg-detail" id="${detailId}" style="display:none;">${escapeHtml(detailContent.trim())}</div>` : ''}
+      </div>`;
+  });
+  msgsHtml += '</div>';
+
+  return `
+    <div class="reader-scene">
+      <div class="reader-scene-text">
+        <div class="step__number">Step ${sceneIdx + 1} of ${totalScenes}</div>
+        <div class="step__title">${escapeHtml(scene.title)}</div>
+        <div class="step__description">${escapeHtml(scene.description)}</div>
+      </div>
+      <div class="reader-scene-stage">
+        <div class="anim-stage">
+          ${actorsHtml}
+          ${msgsHtml}
+        </div>
+      </div>
+    </div>`;
+}
+
+function readerScrollTo(targetId) {
+  const el = document.getElementById(targetId);
+  if (el) {
+    const headerH = document.querySelector('.detail-header')?.offsetHeight || 56;
+    const y = el.getBoundingClientRect().top + window.scrollY - headerH - 12;
+    window.scrollTo({ top: y, behavior: 'smooth' });
+  }
+  // Update URL without triggering hashchange/route
+  history.replaceState(null, '', '#' + targetId);
+}
+
+function setupReaderScrollSpy() {
+  const tocLinks = document.querySelectorAll('.reader-toc-link');
+  const articles = document.querySelectorAll('.reader-article');
+  if (!tocLinks.length || !articles.length) return;
+
+  function onScroll() {
+    // Find which article is currently in view
+    let activeId = null;
+    const scrollY = window.scrollY + 120; // offset for sticky header
+    articles.forEach(article => {
+      if (article.offsetTop <= scrollY) {
+        activeId = article.id;
+      }
+    });
+
+    tocLinks.forEach(link => {
+      const target = link.getAttribute('data-target');
+      if (target === activeId) {
+        link.classList.add('active');
+      } else {
+        link.classList.remove('active');
+      }
+    });
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // Store cleanup reference
+  scrollObserver = {
+    disconnect: () => {
+      window.removeEventListener('scroll', onScroll);
+    }
+  };
 }
 
 // ================================================================
@@ -1032,12 +1446,13 @@ function setupScrollObserver(tech) {
 
   function checkScroll() {
     scrollRafId = null;
-    const graphicBottom = graphic.getBoundingClientRect().bottom;
+    const graphicRect = graphic.getBoundingClientRect();
+    const triggerLine = graphicRect.top + graphicRect.height / 2;
 
-    // Active step = last step whose top edge is above the graphic's bottom edge
+    // Active step = last step whose top edge is above the graphic's vertical center
     let newIdx = 0;
     steps.forEach((step, i) => {
-      if (step.getBoundingClientRect().top < graphicBottom) {
+      if (step.getBoundingClientRect().top < triggerLine) {
         newIdx = i;
       }
     });
@@ -1072,6 +1487,14 @@ function showModal(content, title) {
   // Remove existing modal if any
   closeModal();
   
+  // Try to reformat as indented JSON; fall back to raw content
+  let displayContent = content;
+  try {
+    displayContent = JSON.stringify(JSON.parse(content), null, 2);
+  } catch (e) {
+    // Not valid JSON — show raw
+  }
+  
   const modal = document.createElement('div');
   modal.className = 'json-modal';
   modal.id = 'json-modal';
@@ -1082,7 +1505,7 @@ function showModal(content, title) {
         <div class="json-modal__title">${escapeHtml(title || 'Full Message')}</div>
         <button class="json-modal__close" onclick="closeModal()" aria-label="Close">&times;</button>
       </div>
-      <pre class="json-modal__code">${escapeHtml(content)}</pre>
+      <pre class="json-modal__code">${escapeHtml(displayContent)}</pre>
     </div>
   `;
   document.body.appendChild(modal);
@@ -1120,6 +1543,35 @@ function showDetailsModal() {
   `;
   document.body.appendChild(modal);
   
+  modal.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeModal();
+  });
+  modal.querySelector('.json-modal__close').focus();
+}
+
+// ── Cluster Description Modal ─────────────────────────────────────
+function showClusterModal(clusterId) {
+  if (!DATA || !DATA.clusters) return;
+  const cluster = DATA.clusters.find(c => c.id === clusterId);
+  if (!cluster || !cluster.description) return;
+
+  closeModal();
+
+  const modal = document.createElement('div');
+  modal.className = 'json-modal';
+  modal.id = 'json-modal';
+  modal.innerHTML = `
+    <div class="json-modal__backdrop" onclick="closeModal()"></div>
+    <div class="json-modal__content">
+      <div class="json-modal__header">
+        <div class="json-modal__title">${escapeHtml(cluster.label)}</div>
+        <button class="json-modal__close" onclick="closeModal()" aria-label="Close">&times;</button>
+      </div>
+      <div class="json-modal__body">${escapeHtml(cluster.description)}</div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
   modal.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeModal();
   });

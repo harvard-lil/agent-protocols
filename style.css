@@ -335,6 +335,29 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--fg-dim);
+  border: none;
+  font-family: var(--font);
+  font-weight: inherit;
+}
+
+.tree-group-label--clickable {
+  pointer-events: auto;
+  cursor: pointer;
+  transition: color 0.1s;
+}
+
+.tree-group-label--clickable:hover {
+  color: var(--fg);
+}
+
+.tree-group-info {
+  font-size: 0.5rem;
+  opacity: 0.4;
+  transition: opacity 0.15s;
+}
+
+.tree-group-label--clickable:hover .tree-group-info {
+  opacity: 1;
 }
 
 /* ── SVG Connections ───────────────────────────────────────────── */
@@ -460,29 +483,155 @@ body {
   line-height: 1.3;
 }
 
-/* ── Detail Links ──────────────────────────────────────────────── */
-.detail-links {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 40px;
+/* ── Detail Links (bottom list) ────────────────────────────────── */
+.detail-links-section {
+  margin-top: 0;
 }
 
-.detail-link {
+.detail-links-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.detail-link-item {
   font-family: var(--font);
-  font-size: 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--fg-muted);
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  transition: color 0.1s;
+}
+
+.detail-link-item::before {
+  content: "\2192\00a0";
+  opacity: 0.4;
+}
+
+.detail-link-item:hover {
+  color: var(--fg);
+}
+
+/* ── Tree Relationships (unlocked by / unlocks) ───────────────── */
+.tree-rel-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-left: auto;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.tree-rel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tree-rel-label {
+  font-family: var(--font);
+  font-size: 0.55rem;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  text-decoration: none;
-  color: var(--fg);
-  border: 2px solid var(--border);
-  padding: 8px 16px;
-  transition: background 0.1s, color 0.1s;
+  letter-spacing: 0.1em;
+  color: var(--fg-dim);
+  white-space: nowrap;
+  width: 72px;
+  text-align: right;
 }
 
-.detail-link:hover {
-  background: var(--fg);
-  color: var(--bg);
+.tree-rel-nodes {
+  display: flex;
+  gap: 6px;
+  padding-bottom: 14px;
+}
+
+.tree-rel-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: var(--fg-dim);
+}
+
+.tree-rel-node:hover {
+  color: var(--fg);
+}
+
+.tree-rel-icon {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  opacity: 0.45;
+  transition: opacity 0.15s, border-color 0.15s;
+}
+
+.tree-rel-node:hover .tree-rel-icon {
+  opacity: 1;
+  border-color: var(--border);
+}
+
+.tree-rel-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tree-rel-icon-text {
+  font-size: 0.45rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tree-rel-title {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 3px;
+  font-size: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+.tree-rel-node:hover .tree-rel-title {
+  opacity: 1;
+}
+
+/* On narrow screens, drop rel-bar below the hero text */
+@media (max-width: 700px) {
+  .detail-hero {
+    flex-wrap: wrap;
+  }
+
+  .tree-rel-bar {
+    flex-direction: row;
+    gap: 20px;
+    width: 100%;
+    margin-left: 0;
+    padding-top: 12px;
+  }
+
+  .tree-rel-label {
+    width: auto;
+    text-align: left;
+  }
 }
 
 /* ── Section Headings ──────────────────────────────────────────── */
@@ -525,8 +674,9 @@ body {
 .scrolly__graphic {
   flex: 3;
   position: sticky;
-  top: calc(50vh - 220px);
+  top: max(calc(var(--header-h) + 12px), calc(50vh - 220px));
   height: 440px;
+  max-height: calc(100vh - var(--header-h) - 24px);
   border: 2px solid var(--border);
   background: var(--bg);
   padding: 24px;
@@ -537,6 +687,7 @@ body {
 .scrolly__steps {
   flex: 2;
   padding-top: 40px;
+  padding-bottom: 220px;  /* scroll buffer: lets last step reach graphic top before unsticking */
 }
 
 .step {
@@ -926,6 +1077,7 @@ body {
   .scrolly__steps {
     flex: none;
     padding-top: 0;
+    padding-bottom: 0;
   }
 
   .step {
@@ -983,6 +1135,7 @@ body {
   .scrolly__steps {
     flex: none;
     padding-top: 0;
+    padding-bottom: 0;
   }
 
   .step {
@@ -1065,6 +1218,217 @@ body {
 
   .tree-footer {
     display: none;
+  }
+}
+
+/* ================================================================
+   READER MODE
+   ================================================================ */
+
+.reader-page {
+  min-height: 100vh;
+}
+
+.reader-layout {
+  display: flex;
+  align-items: flex-start;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ── Reader TOC (sticky sidebar) ─────────────────────────────── */
+.reader-toc {
+  position: sticky;
+  top: calc(var(--header-h) + 3px);
+  width: 260px;
+  flex-shrink: 0;
+  padding: 24px 16px 40px 24px;
+  max-height: calc(100vh - var(--header-h) - 3px);
+  overflow-y: auto;
+  border-right: 1px solid var(--border-light);
+}
+
+.reader-toc-header {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--border);
+}
+
+.reader-toc-tree {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.reader-toc-tree ul {
+  list-style: none;
+  padding-left: 16px;
+  margin: 0;
+}
+
+.reader-toc-tree li {
+  margin-bottom: 2px;
+}
+
+.reader-toc-link {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--fg-muted);
+  text-decoration: none;
+  display: block;
+  padding: 3px 8px;
+  letter-spacing: 0.02em;
+  transition: color 0.1s, background 0.1s;
+}
+
+.reader-toc-link:hover {
+  color: var(--fg);
+}
+
+.reader-toc-link.active {
+  color: var(--fg);
+  font-weight: 800;
+  background: var(--highlight);
+}
+
+/* ── Reader TOC Cluster Links ────────────────────────────────── */
+.reader-toc-link--cluster {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── Reader Cluster Articles ─────────────────────────────────── */
+.reader-article--cluster {
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+  border-bottom-width: 1px;
+  border-bottom-style: dashed;
+}
+
+.reader-article--cluster .detail-hero {
+  padding: 24px 0 16px;
+  border-bottom: none;
+  margin-bottom: 8px;
+}
+
+.reader-article--cluster .hero-title {
+  font-size: 1.1rem;
+  color: var(--fg-muted);
+}
+
+/* ── Reader Content ──────────────────────────────────────────── */
+.reader-content {
+  flex: 1;
+  min-width: 0;
+  padding: 0 32px 80px;
+  overflow-x: hidden;
+}
+
+.reader-article {
+  border-bottom: 3px solid var(--border);
+  padding-bottom: 40px;
+  margin-bottom: 40px;
+}
+
+.reader-article:last-child {
+  border-bottom: none;
+}
+
+.reader-article .detail-hero {
+  padding: 32px 0 28px;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 32px;
+}
+
+.reader-detail-link {
+  color: inherit;
+  text-decoration: none;
+  transition: opacity 0.1s;
+}
+
+.reader-detail-link:hover {
+  opacity: 0.6;
+}
+
+/* ── Static Scene Display ────────────────────────────────────── */
+.reader-scenes {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.reader-scene {
+  border: 2px solid var(--border);
+  display: flex;
+  gap: 0;
+}
+
+.reader-scene-text {
+  flex: 0 0 240px;
+  padding: 16px 20px;
+  border-right: 2px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.reader-scene-stage {
+  flex: 1;
+  min-width: 0;
+  padding: 16px 20px;
+  overflow: hidden;
+}
+
+.reader-scene-stage .anim-stage {
+  height: auto;
+  min-height: 180px;
+}
+
+.reader-scene-stage .anim-actors {
+  height: 100px;
+  margin-bottom: 12px;
+}
+
+.reader-scene-stage .anim-messages {
+  gap: 8px;
+}
+
+.reader-scene-stage .anim-message {
+  padding: 4px 0;
+}
+
+/* ── Reader Responsive ───────────────────────────────────────── */
+@media (max-width: 900px) {
+  .reader-layout {
+    flex-direction: column;
+  }
+
+  .reader-toc {
+    position: static;
+    width: 100%;
+    max-height: none;
+    border-right: none;
+    border-bottom: 1px solid var(--border-light);
+    padding: 16px 24px;
+  }
+
+  .reader-content {
+    padding: 0 16px 60px;
+  }
+
+  .reader-scene {
+    flex-direction: column;
+  }
+
+  .reader-scene-text {
+    flex: none;
+    border-right: none;
+    border-bottom: 2px solid var(--border);
   }
 }
 

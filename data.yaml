@@ -23,18 +23,34 @@ actor_icons:
   skill: images/actor-skill.png
 
 # Clusters are decorative dashed-outline group boxes.
+# Each cluster can have an optional `description` (HTML) shown in a modal.
 clusters:
   - id: c-foundations
     label: Model building standards
     members: [tokenizers, weight-formats, embeddings, chat-templates]
+    description: >-
+      These are the low-level file formats and conventions that let a model
+      move between training, distribution, and inference without losing fidelity.
+      None were designed by a standards body; each emerged because model publishers
+      and runtime authors converged on the same artifacts.
 
   - id: c-instruction
     label: Instruction Surfaces
     members: [agents-md, llms-txt, agent-skills]
+    description: >-
+      Instruction surfaces are static files that a website or repository publishes
+      so that any visiting agent can discover what it can do there and how to behave.
+      They are the AI equivalent of robots.txt: a lightweight, zero-auth handshake
+      between a site owner and an autonomous agent.
 
   - id: c-domain
     label: Domain Protocols
     members: [ucp, agent-identity]
+    description: >-
+      Domain protocols carry actual real-world semantics: shopping carts, identity
+      claims, payment flows. They sit at the top of the stack because they depend
+      on every layer below (inference, tool calling, agent coordination) and add
+      the rules specific to a particular industry or use case.
 
 # ── Technologies ────────────────────────────────────────────────────
 # Nodes use column-based layout: {parent, offset}.
@@ -46,6 +62,7 @@ technologies:
 
   # ── Foundations (locked by default; stone-age unlocks) ─────────────
   - id: tokenizers
+    toc_group: 1
     title: Tokenizers
     icon: images/icon-tokenizers.png
     icon_alt: "tok"
@@ -57,8 +74,7 @@ technologies:
         - { label: "Hugging Face Tokenizers", url: "https://github.com/huggingface/tokenizers" }
         - { label: "SentencePiece", url: "https://github.com/google/sentencepiece" }
       what_it_solves: >-
-        A portable text-to-token-id boundary so model weights and runtimes agree
-        on exactly how to encode inputs and decode outputs.
+        Model publishers and runtimes must agree on a shared on-disk artifact with identical encode/decode semantics.
       how_its_standardizing: >-
         Converged through de facto artifacts (vocab/merges, SentencePiece models,
         tokenizer.json) adopted by model publishers and runtimes rather than a
@@ -67,8 +83,80 @@ technologies:
         - "Model publishers ship a tokenizer artifact so downstream users can run the model."
         - "Runtime/tooling authors implement the common artifacts to support many models."
         - "New models choose widely supported tokenizer formats to maximize portability."
+    animation:
+      actors:
+        - id: repo
+          label: Model Repo
+          type: repo
+        - id: runtime
+          label: Runtime / Server
+          type: server
+      scenes:
+        - title: BPE artifacts (vocab + merges)
+          description: >-
+            Many tokenizers standardize as a pair of files. Runtimes must interpret
+            them identically so the same text produces the same token ids.
+          actors_visible: [repo, runtime]
+          messages:
+            - from: runtime
+              to: repo
+              label: Fetch vocab.json
+              json_preview: 'GET /vocab.json'
+            - from: repo
+              to: runtime
+              label: vocab.json
+              json_preview: '{"l":0,"o":1,"w":2,"lo":3,"low":4,"er":5,"lower":6}'
+            - from: runtime
+              to: repo
+              label: Fetch merges.txt
+              json_preview: 'GET /merges.txt'
+            - from: repo
+              to: runtime
+              label: merges.txt
+              json_preview: 'l o\nlo w\nlow er'
+            - from: runtime
+              to: repo
+              label: Deterministic tokenize()
+              json_preview: 'tokenize("lower") -> [6]'
+
+        - title: SentencePiece model file
+          description: >-
+            Other ecosystems converge on a single binary artifact (SentencePiece).
+            The runtime only needs the shared loader to get identical pieces + ids.
+          actors_visible: [repo, runtime]
+          sparkle: true
+          messages:
+            - from: runtime
+              to: repo
+              label: Fetch tokenizer.model
+              json_preview: 'GET /tokenizer.model'
+            - from: repo
+              to: runtime
+              label: SentencePiece model (binary)
+              json_preview: 'pieces=["▁Hello","▁world","!"] ids=[101,102,7]'
+
+        - title: tokenizer.json as a unified portability target
+          description: >-
+            Some publishers ship tokenizer.json so many runtimes can load one format.
+            This becomes a de facto interchange artifact across tools.
+          actors_visible: [repo, runtime]
+          sparkle: true
+          messages:
+            - from: runtime
+              to: repo
+              label: Fetch tokenizer.json
+              json_preview: 'GET /tokenizer.json'
+            - from: repo
+              to: runtime
+              label: tokenizer.json (subset)
+              json_preview: '{"model":{"type":"BPE"},"pre_tokenizer":{"type":"Whitespace"}}'
+            - from: runtime
+              to: repo
+              label: Same artifact, same ids
+              json_preview: 'tokenize("hello world") -> [0,1]'
 
   - id: weight-formats
+    toc_group: 1
     title: Weight Formats
     icon: images/icon-weights.png
     icon_alt: "w"
@@ -90,6 +178,7 @@ technologies:
         - "Converters/quantizers flourish once a stable on-disk format is common."
 
   - id: embeddings
+    toc_group: 1
     title: Embeddings
     icon: images/icon-embeddings.png
     icon_alt: "vec"
@@ -111,6 +200,7 @@ technologies:
         - "Model providers target vector-friendly shapes to plug into common retrieval stacks."
 
   - id: chat-templates
+    toc_group: 1
     title: Chat Templates
     icon: images/icon-chat-templates.png
     icon_alt: "msg"
@@ -142,7 +232,7 @@ technologies:
       links:
         - { label: "Standard", url: "https://platform.openai.com/docs/api-reference/chat" }
         - { label: "Ollama compatibility", url: "https://github.com/ollama/ollama/blob/main/docs/openai.md" }
-        - { label: "vLLM compatibility", url: "https://docs.vllm.ai/en/latest/serving/openai_compatible_server.html" }
+        - { label: "OpenRouter", url: "https://openrouter.ai/docs/quickstart" }
       what_it_solves: >-
         Applications needed a consistent way to send prompts to language
         models and receive responses — without rewriting code for every
@@ -152,9 +242,9 @@ technologies:
         OpenAI's Chat Completions API (March 2023) became the reference
         design for chat-shaped request/response. Many SDKs, gateways, and
         open-source servers (Ollama, vLLM, llama.cpp) expose OpenAI-compatible
-        endpoints. Major providers like Anthropic and Google use different
-        native APIs, but gateway/adapter tools provide compatibility layers.
-        Aggregators like OpenRouter exposes hundreds of models behind the same API.
+        endpoints. Aggregators like OpenRouter expose hundreds of models behind
+        the same API. New entrants like DeepSeek ship compatible APIs from
+        day one to tap into the existing ecosystem immediately.
       virtuous_cycle:
         - "App makers target one interface and can switch providers with minimal changes."
         - "Model hosts gain adoption by being drop-in compatible with existing clients."
@@ -167,11 +257,14 @@ technologies:
         - id: openai
           label: OpenAI
           type: server
-        - id: vllm
-          label: vLLM Server
+        - id: openrouter
+          label: OpenRouter
           type: server
         - id: ollama
           label: Ollama (Local)
+          type: server
+        - id: deepseek
+          label: DeepSeek
           type: server
       scenes:
         - title: App talks to a model provider
@@ -217,18 +310,18 @@ technologies:
                     "total_tokens": 21
                   }
                 }
-        - title: Same code, open-source server
+        - title: Same code, any model via aggregator
           description: >-
-            Switch to a vLLM server running open-weights models —
-            the request and response shape stay the same.
-          actors_visible: [app, vllm]
+            Switch to OpenRouter and access hundreds of models from
+            different providers — the request and response shape stay the same.
+          actors_visible: [app, openrouter]
           sparkle: true
           messages:
             - from: app
-              to: vllm
+              to: openrouter
               label: Same format
-              json_preview: '{"model":"meta-llama/Llama-3-70b","messages":[{"role":"user","content":"Hello"}]}'
-            - from: vllm
+              json_preview: '{"model":"anthropic/claude-sonnet-4","messages":[{"role":"user","content":"Hello"}]}'
+            - from: openrouter
               to: app
               label: Same shape response
               json_preview: '{"choices":[{"message":{"role":"assistant","content":"Hello!"}}]}'
@@ -247,6 +340,22 @@ technologies:
               to: app
               label: Same shape response
               json_preview: '{"choices":[{"message":{"role":"assistant","content":"Hey there!"}}]}'
+        - title: New models launch pre-compatible
+          description: >-
+            When DeepSeek launched its R1 model, it shipped an
+            OpenAI-compatible API from day one — instant access for
+            every app already targeting the standard.
+          actors_visible: [app, deepseek]
+          sparkle: true
+          messages:
+            - from: app
+              to: deepseek
+              label: Same format, new model
+              json_preview: '{"model":"deepseek-reasoner","messages":[{"role":"user","content":"Hello"}]}'
+            - from: deepseek
+              to: app
+              label: Same shape response
+              json_preview: '{"choices":[{"message":{"role":"assistant","content":"Hello! How can I help?"}}]}'
 
   # ── Tool Calling ──────────────────────────────────────────────────
   - id: tool-calling
@@ -380,10 +489,11 @@ technologies:
         - { label: "Spec (2025-03-26)", url: "https://modelcontextprotocol.io/specification/2025-03-26" }
         - { label: "AAIF governance", url: "https://www.linuxfoundation.org/press/linux-foundation-announces-the-formation-of-the-agentic-ai-foundation" }
       what_it_solves: >-
-        Without MCP, connecting N apps to M tool providers requires N*M
+        Now models can call tools — but without MCP, connecting N apps to M tool providers requires N*M
         custom integrations. MCP defines a single client/server protocol
-        so any app can discover and use any tool server — tools/list to
-        find what's available, tools/call to use it.
+        so any app can discover and use any tool server — just run tools/list to
+        find what's available, tools/call to use it, with a standard way to
+        authenticate to private servers.
       how_its_standardizing: >-
         Introduced by Anthropic (November 2024). Rapidly adopted across
         the agent tooling ecosystem. Now under open governance through
