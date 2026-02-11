@@ -19,9 +19,6 @@ Usage:
     # Regenerate a specific image:
     uv run generate-images --only icon-mcp.png
 
-    # Also patch data.yaml with icon/actor_icon fields:
-    uv run generate-images --patch-data
-
     # Choose a different model:
     uv run generate-images --model google/gemini-2.5-flash-image-preview
 
@@ -48,7 +45,6 @@ TOOLS_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = TOOLS_DIR.parent
 IMAGES_YAML = TOOLS_DIR / "images.yaml"
 OUTPUT_DIR = PROJECT_ROOT / "images"
-DATA_YAML = PROJECT_ROOT / "data.yaml"
 
 # ── OpenRouter API ─────────────────────────────────────────────────
 OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
@@ -229,47 +225,6 @@ def generate_image(
 
 
 # ════════════════════════════════════════════════════════════════════
-#  data.yaml patching
-# ════════════════════════════════════════════════════════════════════
-
-
-def patch_data_yaml(prompts: list[dict]) -> None:
-    """
-    Add `icon` fields to protocols and `actor_icons` mapping to the
-    top level of data.yaml so the front-end can reference images.
-    """
-    with open(DATA_YAML) as f:
-        raw = f.read()
-    data = yaml.safe_load(raw)
-
-    # Map data_id -> relative image path for tech icons
-    tech_map = {
-        p["data_id"]: f"images/{p['filename']}"
-        for p in prompts
-        if p["category"] == "tech"
-    }
-
-    # Inject icon field into each protocol
-    for proto in data.get("protocols", []):
-        pid = proto["id"]
-        if pid in tech_map:
-            proto["icon"] = tech_map[pid]
-
-    # Build actor_icons top-level mapping
-    actor_map = {
-        p["actor_type"]: f"images/{p['filename']}"
-        for p in prompts
-        if p["category"] == "actor"
-    }
-    data["actor_icons"] = actor_map
-
-    with open(DATA_YAML, "w") as f:
-        yaml.dump(data, f, default_flow_style=False, sort_keys=False, width=120)
-
-    console.print(f"[green]✓[/green] Patched {DATA_YAML.relative_to(PROJECT_ROOT)}")
-
-
-# ════════════════════════════════════════════════════════════════════
 #  CLI
 # ════════════════════════════════════════════════════════════════════
 
@@ -298,11 +253,6 @@ def main() -> None:
         "--only",
         metavar="FILENAME",
         help="Only generate/show this one image (by filename)",
-    )
-    parser.add_argument(
-        "--patch-data",
-        action="store_true",
-        help="After generation, patch data.yaml with icon paths",
     )
     parser.add_argument(
         "--force",
@@ -419,9 +369,6 @@ def main() -> None:
             )
             if len(recent_refs) > MAX_STYLE_REFS:
                 recent_refs.pop(0)
-
-    if args.patch_data:
-        patch_data_yaml(all_prompts)
 
     console.print("\n[bold green]Done.[/bold green]")
 

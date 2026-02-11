@@ -27,6 +27,7 @@ async function init() {
     if (!resp.ok) throw new Error('Failed to load data.yaml');
     const text = await resp.text();
     DATA = jsyaml.load(text);
+    buildLayoutFromTree();
   } catch (err) {
     document.getElementById('app').innerHTML =
       `<div class="loading">Error loading data: ${escapeHtml(err.message)}<br>
@@ -160,6 +161,74 @@ function navigateTo(hash) {
   window.location.hash = hash ? `#${hash}` : '#';
 }
 
+// ── Tree → Layout ────────────────────────────────────────────────
+// Build layout properties from the `tree:` key in data.yaml.
+// Walks the tree depth-first, setting layout.parent/parents and layout.col
+// on each technology, and reorders DATA.technologies to match tree order
+// (which controls vertical positioning within each column).
+
+function buildLayoutFromTree() {
+  const tree = DATA.tree;
+  if (!tree) return;
+
+  const techById = new Map(DATA.technologies.map(t => [t.id, t]));
+  const orderedIds = [];
+  const colById = new Map(); // id -> resolved column
+
+  function walk(nodes, structuralParentId, structuralParentCol) {
+    for (const treeNode of nodes) {
+      const tech = techById.get(treeNode.id);
+      if (!tech) {
+        console.warn(`Tree references unknown technology: ${treeNode.id}`);
+        continue;
+      }
+
+      // Build parent list: structural parent (from nesting) + extra_parents
+      const parents = [];
+      if (structuralParentId !== null) parents.push(structuralParentId);
+      if (treeNode.extra_parents) parents.push(...treeNode.extra_parents);
+
+      // Column formula: first_parent_col + 1 + extra_cols.
+      // Roots with no parents at all get column 0.
+      const extraCols = treeNode.extra_cols || 0;
+      let col;
+      if (parents.length > 0) {
+        const firstParentCol = colById.has(parents[0])
+          ? colById.get(parents[0])
+          : (structuralParentId !== null ? structuralParentCol : 0);
+        col = firstParentCol + 1 + extraCols;
+      } else {
+        col = extraCols;
+      }
+      colById.set(treeNode.id, col);
+
+      tech.layout = { col };
+      if (parents.length === 1) {
+        tech.layout.parent = parents[0];
+      } else if (parents.length > 1) {
+        tech.layout.parents = parents;
+      }
+
+      orderedIds.push(treeNode.id);
+
+      if (treeNode.children) {
+        walk(treeNode.children, treeNode.id, col);
+      }
+    }
+  }
+
+  walk(tree, null, 0);
+
+  // Reorder technologies to match tree traversal order.
+  // Technologies not in the tree are appended at the end.
+  const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
+  DATA.technologies.sort((a, b) => {
+    const ai = orderMap.has(a.id) ? orderMap.get(a.id) : Infinity;
+    const bi = orderMap.has(b.id) ? orderMap.get(b.id) : Infinity;
+    return ai - bi;
+  });
+}
+
 // ── Layout Helpers ────────────────────────────────────────────────
 
 function isLocked(tech) {
@@ -168,14 +237,15 @@ function isLocked(tech) {
 
 // Helper: get array of parent IDs (supports both parent and parents in layout)
 function getLayoutParentIds(n) {
+  if (!n.layout) return [];
   if (n.layout.parents && n.layout.parents.length) return n.layout.parents;
   if (n.layout.parent) return [n.layout.parent];
   return [];
 }
 
-// Resolve column positions from parent + offset relationships
-// Nodes specify layout: { parent: "parent-id", offset: 2 } where offset defaults to 1
-// Root nodes (no parent) get column 0
+// Resolve column positions.
+// If layout.col is already set (e.g. by buildLayoutFromTree), use it directly.
+// Otherwise fall back to parent + offset calculation.
 function resolveColumns(nodes) {
   const byId = new Map(nodes.map(n => [n.id, n]));
   const resolved = new Map(); // id -> column
@@ -185,6 +255,12 @@ function resolveColumns(nodes) {
     
     const node = byId.get(nodeId);
     if (!node) return 0;
+    
+    // If col is already set (e.g. from tree), use it directly
+    if (node.layout && node.layout.col !== undefined) {
+      resolved.set(nodeId, node.layout.col);
+      return node.layout.col;
+    }
     
     const parentIds = getLayoutParentIds(node);
     if (parentIds.length === 0) {
@@ -206,6 +282,7 @@ function resolveColumns(nodes) {
   
   // Store resolved columns back on layout objects for use elsewhere
   nodes.forEach(n => {
+    if (!n.layout) n.layout = {};
     n.layout.col = resolved.get(n.id);
   });
   
@@ -597,9 +674,7 @@ function showTree() {
     const locked = isLocked(tech);
     const lockedClass = locked ? ' node-locked' : '';
 
-    const iconHtml = tech.icon
-      ? `<img src="${escapeHtml(tech.icon)}" alt="${escapeHtml(tech.icon_alt)}" class="node-icon-img">`
-      : escapeHtml(tech.icon_alt);
+    const iconHtml = techIconHtml(tech, 'node-icon-img');
 
     nodesHtml += `
       <div class="tree-node${lockedClass}" tabindex="0" role="button"
@@ -671,14 +746,14 @@ function showTree() {
   document.getElementById('app').innerHTML = `
     <div class="tree-page">
       <header class="tree-header">
-        <div class="tree-header-top">
-          ${getAttributionHtml()}
-          ${getToolbarHtml()}
-        </div>
         <div class="tree-header-text">
           <h1>${escapeHtml(DATA.title)}</h1>
           <p>${escapeHtml(DATA.subtitle)}</p>
           ${readMoreBtn}
+        </div>
+        <div class="tree-header-right">
+          ${getToolbarHtml()}
+          ${getAttributionHtml()}
         </div>
       </header>
       <div class="tree-container">
@@ -759,9 +834,7 @@ function buildRelHtml(techId) {
         <span class="tree-rel-label">${label}</span>
         <div class="tree-rel-nodes">
           ${techs.map(t => {
-            const iconHtml = t.icon
-              ? `<img src="${escapeHtml(t.icon)}" alt="" class="tree-rel-icon-img">`
-              : `<span class="tree-rel-icon-text">${escapeHtml(t.icon_alt)}</span>`;
+            const iconHtml = techIconHtml(t, 'tree-rel-icon-img');
             return `<a href="#${t.id}" class="tree-rel-node">
               <span class="tree-rel-icon">${iconHtml}</span>
               <span class="tree-rel-title">${escapeHtml(t.title)}</span>
@@ -838,9 +911,7 @@ function showDetail(techId) {
   }
 
   // Icon for hero (larger)
-  const heroIconHtml = tech.icon
-    ? `<img src="${escapeHtml(tech.icon)}" alt="${escapeHtml(tech.icon_alt)}" class="hero-icon-img">`
-    : escapeHtml(tech.icon_alt);
+  const heroIconHtml = techIconHtml(tech, 'hero-icon-img');
 
   document.getElementById('app').innerHTML = `
     <div class="detail-page">
@@ -1029,9 +1100,7 @@ function renderTechArticle(tech) {
   const hasAnimation = tech.animation && tech.animation.scenes && tech.animation.scenes.length > 0;
 
   // Icon
-  const heroIconHtml = tech.icon
-    ? `<img src="${escapeHtml(tech.icon)}" alt="${escapeHtml(tech.icon_alt)}" class="hero-icon-img">`
-    : escapeHtml(tech.icon_alt);
+  const heroIconHtml = techIconHtml(tech, 'hero-icon-img');
 
   // Links (rendered at bottom)
   let linksHtml = '';
@@ -1114,10 +1183,7 @@ function renderStaticScene(scene, allActors, sceneIdx, totalScenes, techId) {
     if (visibleIdx < 0) return;
 
     const leftPct = ((visibleIdx + 0.5) / n) * 100;
-    const iconSrc = DATA.actor_icons && DATA.actor_icons[actor.type];
-    const iconContent = iconSrc
-      ? `<img src="${escapeHtml(iconSrc)}" alt="${escapeHtml(actorIconText(actor.type))}" class="actor-icon-img">`
-      : escapeHtml(actorIconText(actor.type));
+    const iconContent = actorIconHtml(actor.type);
 
     actorsHtml += `
       <div class="anim-actor" style="left:${leftPct}%;opacity:1;">
@@ -1329,7 +1395,7 @@ function toggleDetail(id, label) {
   showModal(content, label);
 }
 
-// ── Actor Icon Text (fallback when no image) ──────────────────────
+// ── Icon helpers (convention-based paths with onerror fallback) ───
 function actorIconText(type) {
   const icons = {
     app: 'APP',
@@ -1344,6 +1410,18 @@ function actorIconText(type) {
     skill: 'SKILL',
   };
   return icons[type] || type.toUpperCase().slice(0, 4);
+}
+
+function techIconHtml(tech, cssClass) {
+  const alt = escapeHtml(tech.icon_alt);
+  const src = `images/icon-${tech.id}.png`;
+  return `<img src="${src}" alt="${alt}" class="${cssClass}" onerror="this.replaceWith(document.createTextNode('${alt}'))">`;
+}
+
+function actorIconHtml(actorType) {
+  const alt = escapeHtml(actorIconText(actorType));
+  const src = `images/actor-${actorType}.png`;
+  return `<img src="${src}" alt="${alt}" class="actor-icon-img" onerror="this.replaceWith(document.createTextNode('${alt}'))">`;
 }
 
 // ── Escape HTML ───────────────────────────────────────────────────

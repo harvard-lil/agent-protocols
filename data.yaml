@@ -9,19 +9,6 @@ details: |
   the standards they are converging on and why each layer came to be.
 
 
-# Actor icon images — keyed by actor type, referenced in animations.
-# Generate with: cd tools && uv run generate-images --patch-data
-actor_icons:
-  app: images/actor-app.png
-  model: images/actor-model.png
-  server: images/actor-server.png
-  agent: images/actor-agent.png
-  repo: images/actor-repo.png
-  website: images/actor-website.png
-  registry: images/actor-registry.png
-  merchant: images/actor-merchant.png
-  skill: images/actor-skill.png
-
 # Clusters are decorative dashed-outline group boxes.
 # Each cluster can have an optional `description` (HTML) shown in a modal.
 clusters:
@@ -41,9 +28,52 @@ clusters:
       Domain protocols carry actual real-world semantics: shopping carts, identity
       claims, payment flows. They show agent protocols becoming mature and specialized.
 
+# ── Tree ──────────────────────────────────────────────────────────────
+# Defines hierarchy and visual layout.  Nesting = parent → child.
+# extra_cols:     additional columns beyond default (first_parent_col + 1).
+# extra_parents:  additional parent connections drawn on the tree.
+# Column formula: first_parent_col + 1 + extra_cols (default 0); roots with no parents: 0.
+# Sibling order controls vertical positioning within a column.
+
+tree:
+  - id: tokenizers
+  - id: weight-formats
+  - id: embeddings
+  - id: chat-templates
+  - id: inference-api
+    extra_parents: [tokenizers, weight-formats, embeddings, chat-templates]
+    children:
+      - id: tool-calling
+        children:
+          - id: mcp
+            children:
+              - id: mcp-apps
+          - id: standard-tool-surfaces
+            children:
+              - id: agents-md
+              - id: llms-txt
+          - id: agent-loop
+            extra_cols: 1
+            children:
+              - id: agent-skills
+                children:
+                  - id: skill-security
+              - id: a2a
+                children:
+                  - id: ucp
+                  - id: agent-identity
+                    children:
+                      - id: ap2
+                        children:
+                          - id: intent-mandates
+              - id: agent-audit
+              - id: agent-card
+                children:
+                  - id: agent-registries
+              - id: agent-lingua
+              - id: human-context-protocol
+
 # ── Technologies ────────────────────────────────────────────────────
-# Nodes use column-based layout: {parent, offset}.
-# parent: id of parent node for Y positioning. offset: column offset from parent.
 # unlock.state: locked | unlocked (default unlocked).
 # unlock.class: foundational | frontier (determines overlay icon).
 
@@ -53,10 +83,8 @@ technologies:
   - id: tokenizers
     toc_group: 1
     title: Tokenizers
-    icon: images/icon-tokenizers.png
     icon_alt: "tok"
     tagline: Portable text-to-token boundary
-    layout: {}
     unlock: { state: locked, class: foundational }
     detail:
       links:
@@ -147,10 +175,8 @@ technologies:
   - id: weight-formats
     toc_group: 1
     title: Weight Formats
-    icon: images/icon-weights.png
     icon_alt: "w"
     tagline: Safe model distribution
-    layout: {}
     unlock: { state: locked, class: foundational }
     detail:
       links:
@@ -169,10 +195,8 @@ technologies:
   - id: embeddings
     toc_group: 1
     title: Embeddings
-    icon: images/icon-embeddings.png
     icon_alt: "vec"
     tagline: Universal vector interface
-    layout: {}
     unlock: { state: locked, class: foundational }
     detail:
       links:
@@ -191,10 +215,8 @@ technologies:
   - id: chat-templates
     toc_group: 1
     title: Chat Templates
-    icon: images/icon-chat-templates.png
     icon_alt: "msg"
     tagline: Portable conversation format
-    layout: {}
     unlock: { state: locked, class: foundational }
     detail:
       links:
@@ -213,10 +235,8 @@ technologies:
   # ── Inference ─────────────────────────────────────────────────────
   - id: inference-api
     title: Inference API
-    icon: images/icon-inference-api.png
     icon_alt: ">_"
     tagline: A stable way to talk to any model
-    layout: { parents: [tokenizers, weight-formats, embeddings, chat-templates] }
     detail:
       links:
         - { label: "Standard", url: "https://platform.openai.com/docs/api-reference/chat" }
@@ -349,10 +369,8 @@ technologies:
   # ── Tool Calling ──────────────────────────────────────────────────
   - id: tool-calling
     title: Tool Calling
-    icon: images/icon-tool-calling.png
     icon_alt: "f(x)"
     tagline: Models that can take action
-    layout: { col: 2, parent: inference-api }
     detail:
       links:
         - { label: "Launch", url: "https://openai.com/index/function-calling-and-other-api-updates/" }
@@ -468,10 +486,8 @@ technologies:
   # ── MCP ───────────────────────────────────────────────────────────
   - id: mcp
     title: MCP
-    icon: images/icon-mcp.png
     icon_alt: "<>"
     tagline: One protocol for every tool
-    layout: { col: 3, parent: tool-calling }
     detail:
       links:
         - { label: "Launch", url: "https://www.anthropic.com/news/model-context-protocol" }
@@ -603,10 +619,8 @@ technologies:
   # ── MCP Apps ──────────────────────────────────────────────────────
   - id: mcp-apps
     title: MCP Apps
-    icon: images/icon-mcp-apps.png
     icon_alt: "UI"
     tagline: Interactive UIs for tool servers
-    layout: { col: 4, parent: mcp }
     detail:
       what_it_solves: >-
         MCP makes chatbots the front door to the internet — users might start to make Spotify
@@ -673,10 +687,8 @@ technologies:
   # ── Standard Tool Surfaces ────────────────────────────────────────
   - id: standard-tool-surfaces
     title: Standard Tools
-    icon: images/icon-tool-surfaces.png
     icon_alt: "cli"
     tagline: Browser, Command Line, and Code
-    layout: { col: 3, parent: tool-calling }
     detail:
       what_it_solves: >-
         Some tools turn out to be so useful that model makers have to make sure
@@ -795,10 +807,8 @@ technologies:
   # ── Instruction Surfaces ──────────────────────────────────────────
   - id: agents-md
     title: AGENTS.md
-    icon: images/icon-agents-md.png
     icon_alt: "#"
     tagline: Project-local guidance for agents
-    layout: { parent: standard-tool-surfaces }
     detail:
       links:
         - { label: "Standard", url: "https://agents.md/" }
@@ -905,10 +915,8 @@ technologies:
 
   - id: llms-txt
     title: llms.txt
-    icon: images/icon-llms-txt.png
     icon_alt: "//"
     tagline: AI-readable site index
-    layout: { parent: standard-tool-surfaces }
     detail:
       links:
         - { label: "Standard", url: "https://llmstxt.org/" }
@@ -997,10 +1005,8 @@ technologies:
 
   - id: agent-skills
     title: Agent Skills
-    icon: images/icon-agent-skills.png
     icon_alt: "pkg"
     tagline: Portable capability packages
-    layout: { parent: agent-loop }
     detail:
       links:
         - { label: "Standard", url: "https://agentskills.io/specification" }
@@ -1094,10 +1100,8 @@ technologies:
 
   - id: skill-security
     title: Skill Signing
-    icon: images/icon-skill-security.png
     icon_alt: "lock"
     tagline: Safe distribution of capabilities
-    layout: { col: 5, parent: agent-skills }
     unlock: { state: locked, class: frontier }
     detail:
       links:
@@ -1141,10 +1145,8 @@ technologies:
   # ── Agent Loop ──────────────────────────────────────────────────────
   - id: agent-loop
     title: Agent Loop
-    icon: images/icon-agent-loop.png
     icon_alt: "loop"
     tagline: Models that keep going
-    layout: { col: 3, parent: tool-calling }
     detail:
       links:
         - { label: "Pattern", url: "https://www.anthropic.com/engineering/building-effective-agents" }
@@ -1213,10 +1215,8 @@ technologies:
   # ── A2A ───────────────────────────────────────────────────────────
   - id: a2a
     title: A2A
-    icon: images/icon-a2a.png
     icon_alt: "<>"
     tagline: Agents working across frameworks
-    layout: { col: 4, parent: agent-loop }
     detail:
       links:
         - { label: "Launch", url: "https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/" }
@@ -1335,10 +1335,8 @@ technologies:
   # ── Domain Protocols ──────────────────────────────────────────────
   - id: ucp
     title: UCP
-    icon: images/icon-ucp.png
     icon_alt: "$"
     tagline: Universal agent commerce
-    layout: { col: 4, parent: a2a }
     detail:
       links:
         - { label: "Shopify launch", url: "https://www.shopify.com/ucp" }
@@ -1450,10 +1448,8 @@ technologies:
 
   - id: agent-identity
     title: Agent Identity
-    icon: images/icon-agent-identity.png
     icon_alt: "id"
     tagline: Verified agents on the open web
-    layout: { col: 4, parent: a2a }
     detail:
       links:
         - { label: "HTTP Message Signatures (IETF)", url: "https://datatracker.ietf.org/wg/httpbis/documents/" }
@@ -1542,10 +1538,8 @@ technologies:
   # ── Frontier (locked by default; rocket unlocks) ──────────────────
   - id: agent-audit
     title: Agent Audit Traces
-    icon: images/icon-audit.png
     icon_alt: "log"
     tagline: Portable run records
-    layout: { parent: agent-loop }
     unlock: { state: locked, class: frontier }
     detail:
       links:
@@ -1583,10 +1577,8 @@ technologies:
 
   - id: ap2
     title: AP2
-    icon: images/icon-ap2.png
     icon_alt: "pay"
     tagline: Agent-to-agent payments
-    layout: { col: 5, parent: agent-identity }
     detail:
       links:
         - { label: "Specification", url: "https://ap2-protocol.org/specification/" }
@@ -1640,10 +1632,8 @@ technologies:
 
   - id: intent-mandates
     title: Signed Intent Mandates
-    icon: images/icon-mandate.png
     icon_alt: "sig"
     tagline: Verifiable consent for actions
-    layout: { col: 6, parent: ap2 }
     unlock: { state: locked, class: frontier }
     detail:
       links:
@@ -1695,10 +1685,8 @@ technologies:
 
   - id: agent-card
     title: AgentCard
-    icon: images/icon-agent-card.png
     icon_alt: "card"
     tagline: Well-known agent descriptors
-    layout: { parent: agent-loop }
     detail:
       links:
         - { label: "A2A AgentCard spec", url: "https://agent2agent.info/specification/#agentcard" }
@@ -1742,10 +1730,8 @@ technologies:
 
   - id: agent-registries
     title: Agent Registries
-    icon: images/icon-registry.png
     icon_alt: "dir"
     tagline: Discovery, routing, permissions
-    layout: { parent: agent-card }
     unlock: { state: locked, class: frontier }
     detail:
       links:
@@ -1787,10 +1773,8 @@ technologies:
 
   - id: agent-lingua
     title: Agent Lingua Franca
-    icon: images/icon-lingua.png
     icon_alt: "abc"
     tagline: Token-efficient inter-agent speech
-    layout: { parent: agent-loop }
     unlock: { state: locked, class: frontier }
     detail:
       links:
@@ -1832,10 +1816,8 @@ technologies:
 
   - id: human-context-protocol
     title: Human Context Protocol
-    icon: images/icon-hcp.png
     icon_alt: "ctx"
     tagline: Portable user memory and preferences
-    layout: { parent: agent-loop }
     unlock: { state: locked, class: frontier }
     detail:
       links:

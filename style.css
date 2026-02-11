@@ -69,7 +69,7 @@ body {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px 24px;
-  padding: 20px 24px 24px;
+  padding: 16px 24px;
   border-bottom: 3px solid var(--border);
 }
 
@@ -97,13 +97,12 @@ body {
   flex-shrink: 0;
 }
 
-.tree-header-top {
+.tree-header-right {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  width: 100%;
-  margin-bottom: 12px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 /* ── Attribution ──────────────────────────────────────────────── */
@@ -1019,11 +1018,10 @@ body {
     font-size: 0.7rem;
   }
 
-  .tree-header-top {
+  .tree-header-right {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
-    margin-bottom: 8px;
   }
 
   .attribution-text {
