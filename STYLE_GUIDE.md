@@ -155,12 +155,12 @@ intentional:
    understand *why this exists* before learning how it works. Written
    in plain language; no jargon that hasn't been introduced yet.
 
-2. **How it works** — The scrollytelling animation. This is the core
-   teaching tool. See "Animation Pedagogy" below.
+2. **How it works** — Static scene diagrams showing protocol flows.
+   This is the core teaching tool. See "Scene Pedagogy" below.
 
 3. **Why it's an open protocol** — The interoperability argument. This
    answers "why should I care that it's a standard?" in one or two
-   sentences. Positioned after the animation so the reader has
+   sentences. Positioned after the scenes so the reader has
    concrete understanding of what "interoperable" means in this
    context.
 
@@ -170,14 +170,14 @@ intentional:
 5. **Who maintains it** — Governance and adoption. Tells the reader
    whether this is a one-company proposal or a community standard.
 
-### Animation Pedagogy
+### Scene Pedagogy
 
-The "How it works" section uses a scrollytelling pattern: a sticky
-animation stage on the left, with step descriptions scrolling on the
-right. Each step is a discrete scene.
+The "How it works" section displays static scene diagrams: each scene
+is a card with step text on the left and an animation stage (actors +
+message arrows) on the right, stacked vertically.
 
-**The key pedagogical move is the swap scene.** Every protocol
-animation follows the same arc:
+**The key pedagogical move is the swap scene.** Every protocol's
+scenes follow the same arc:
 
 1. **Show the basic flow** — two actors exchanging messages in the
    protocol.
@@ -284,16 +284,9 @@ rather than moving logic into the data.
 
 When `prefers-reduced-motion: reduce` is active:
 
-- All CSS transitions are disabled
-- The scrollytelling layout collapses to a stacked single-column view
-  (no sticky positioning)
-- The sparkle pulse animation stops
 - Scroll behavior switches from `smooth` to `auto`
-- Users can click step cards to switch scenes manually
 
-The same stacked layout is used on narrow viewports (`< 768px`)
-regardless of motion preference, since sticky side-by-side layout
-doesn't work well on small screens.
+Scene diagrams are fully static and require no motion accommodations.
 
 ### Keyboard Navigation
 
@@ -307,7 +300,6 @@ doesn't work well on small screens.
 
 - Tree nodes have `aria-label` combining title and tagline
 - Icon boxes are `aria-hidden="true"` (they're decorative placeholders)
-- Sparkle badges have `aria-label="Interoperable"`
 - Section labels are plain text headings (not `<h2>`/`<h3>` — this
   could be improved)
 
@@ -333,12 +325,8 @@ grid with 10px padding around member nodes.
 
 - Max content width: 900px, centered
 - Body text max width: 640px (for readable line length)
-- Scrollytelling split: 60/40 (graphic 3fr, steps 2fr)
-- Animation stage: sticky at vertical center of viewport
-- Steps: min-height 60vh each (creates scroll space for the observer)
-- Intersection Observer trigger zone: top 30% to bottom 50% of
-  viewport (biased toward the top so scenes change as steps enter,
-  not as they leave)
+- Scene cards: text panel (240px fixed) on left, stage on right
+- On narrow screens (`< 900px`), scene cards stack vertically
 
 ---
 

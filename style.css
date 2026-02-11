@@ -657,61 +657,7 @@ body {
   max-width: 640px;
 }
 
-/* ================================================================
-   SCROLLYTELLING (How It Works)
-   ================================================================ */
-
-.how-it-works {
-  margin-bottom: 48px;
-}
-
-.scrolly {
-  display: flex;
-  gap: 32px;
-  align-items: flex-start;
-}
-
-.scrolly__graphic {
-  flex: 3;
-  position: sticky;
-  top: max(calc(var(--header-h) + 12px), calc(50vh - 220px));
-  height: 440px;
-  max-height: calc(100vh - var(--header-h) - 24px);
-  border: 2px solid var(--border);
-  background: var(--bg);
-  padding: 24px;
-  align-self: flex-start;
-  overflow: hidden;
-}
-
-.scrolly__steps {
-  flex: 2;
-  padding-top: 40px;
-  padding-bottom: 220px;  /* scroll buffer: lets last step reach graphic top before unsticking */
-}
-
-.step {
-  min-height: 60vh;
-  padding: 24px 0;
-  display: flex;
-  align-items: flex-start;
-}
-
-.step:last-child {
-  min-height: 40vh;
-}
-
-.step__content {
-  padding: 16px 20px;
-  border: 2px solid transparent;
-  transition: border-color 0.2s;
-  max-width: 300px;
-}
-
-.step.active .step__content {
-  border-color: var(--border);
-  background: var(--bg);
-}
+/* ── Scene Step Text ───────────────────────────────────────────── */
 
 .step__title {
   font-size: 0.75rem;
@@ -731,13 +677,6 @@ body {
   font-size: 0.8rem;
   line-height: 1.5;
   color: var(--fg-muted);
-}
-
-.step__sparkle {
-  display: inline-block;
-  margin-left: 4px;
-  font-size: 0.9rem;
-  vertical-align: middle;
 }
 
 /* ── Animation Stage ───────────────────────────────────────────── */
@@ -794,17 +733,6 @@ body {
   font-size: 0.75rem;
   font-weight: 700;
   white-space: nowrap;
-}
-
-/* Actor sparkle indicator for new/swapped actors */
-.anim-actor.actor-sparkle::after {
-  content: "✨";
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  font-size: 1.2rem;
-  animation: sparkle-pulse 1.5s ease-in-out infinite;
-  z-index: 10;
 }
 
 /* Message list */
@@ -907,33 +835,6 @@ body {
 /* Hidden storage for full JSON (accessed by modal) */
 .msg-detail {
   display: none;
-}
-
-/* Sparkle badge */
-.sparkle-badge {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  font-size: 0.7rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  border: 2px solid var(--fg);
-  padding: 5px 10px;
-  background: var(--bg);
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.sparkle-badge .star {
-  display: inline-block;
-  animation: sparkle-pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes sparkle-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
 }
 
 /* ================================================================
@@ -1046,57 +947,6 @@ body {
   html {
     scroll-behavior: auto;
   }
-
-  .anim-actor {
-    transition: none;
-  }
-
-  .anim-messages {
-    transition: none;
-  }
-
-  .step__content {
-    transition: none;
-  }
-
-  .sparkle-badge .star,
-  .anim-actor.actor-sparkle::after {
-    animation: none;
-  }
-
-  /* Collapse scrollytelling to stacked layout */
-  .scrolly {
-    flex-direction: column;
-  }
-
-  .scrolly__graphic {
-    position: static;
-    flex: none;
-  }
-
-  .scrolly__steps {
-    flex: none;
-    padding-top: 0;
-    padding-bottom: 0;
-  }
-
-  .step {
-    min-height: auto;
-    padding: 16px 0;
-  }
-
-  .step:last-child {
-    min-height: auto;
-  }
-
-  .step .step__content {
-    border-color: var(--border-light);
-    max-width: none;
-  }
-
-  .step.active .step__content {
-    border-color: var(--border);
-  }
 }
 
 /* ================================================================
@@ -1121,34 +971,6 @@ body {
 
   .attribution-logo svg {
     width: 24px;
-  }
-
-  .scrolly {
-    flex-direction: column;
-  }
-
-  .scrolly__graphic {
-    position: static;
-    flex: none;
-  }
-
-  .scrolly__steps {
-    flex: none;
-    padding-top: 0;
-    padding-bottom: 0;
-  }
-
-  .step {
-    min-height: auto;
-    padding: 16px 0;
-  }
-
-  .step:last-child {
-    min-height: auto;
-  }
-
-  .step .step__content {
-    max-width: none;
   }
 
   .detail-hero .tagline {

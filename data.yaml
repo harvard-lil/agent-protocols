@@ -29,28 +29,17 @@ clusters:
     label: Model building standards
     members: [tokenizers, weight-formats, embeddings, chat-templates]
     description: >-
-      These are the low-level file formats and conventions that let a model
-      move between training, distribution, and inference without losing fidelity.
+      These are the low-level file formats and conventions that let open weight model
+      move between training, distribution, and inference.
       None were designed by a standards body; each emerged because model publishers
       and runtime authors converged on the same artifacts.
-
-  - id: c-instruction
-    label: Instruction Surfaces
-    members: [agents-md, llms-txt, agent-skills]
-    description: >-
-      Instruction surfaces are static files that a website or repository publishes
-      so that any visiting agent can discover what it can do there and how to behave.
-      They are the AI equivalent of robots.txt: a lightweight, zero-auth handshake
-      between a site owner and an autonomous agent.
 
   - id: c-domain
     label: Domain Protocols
     members: [ucp, agent-identity]
     description: >-
       Domain protocols carry actual real-world semantics: shopping carts, identity
-      claims, payment flows. They sit at the top of the stack because they depend
-      on every layer below (inference, tool calling, agent coordination) and add
-      the rules specific to a particular industry or use case.
+      claims, payment flows. They show agent protocols becoming mature and specialized.
 
 # ── Technologies ────────────────────────────────────────────────────
 # Nodes use column-based layout: {parent, offset}.
@@ -619,21 +608,30 @@ technologies:
     tagline: Interactive UIs for tool servers
     layout: { col: 4, parent: mcp }
     detail:
-      links:
-        - { label: "Extension docs", url: "https://modelcontextprotocol.io/docs/extensions/apps" }
-        - { label: "MCP repo", url: "https://github.com/modelcontextprotocol" }
       what_it_solves: >-
-        Lets tool providers ship sandboxed UI surfaces (previews, editors,
-        dashboards) integrated into agent hosts — without giving raw OS
-        control to the model.
+        MCP makes chatbots the front door to the internet — users might start to make Spotify
+        playlists or buy products through their favorite chatbot rather than the original site.
+        But some of those interactions might need custom UI that chatbot makers don't want to
+        maintain, and some vendors might want to keep a face-to-face relationship with their
+        users. MCP Apps provide a safe, controlled way for upstream services to talk 
+        directly to the user without leaving their chat.
       how_its_standardizing: >-
-        Evolved as an MCP extension. Standardization is driven by host
-        support (clients) and shared UI embedding + messaging conventions
-        (sandboxed iframe + notifications).
+        MCP Apps emerged as the convergence point between Anthropic's MCP ecosystem and the demand for rich, safe in-chat UI that OpenAI operationalized with the ChatGPT Apps SDK. OpenAI later documented that ChatGPT implements the MCP Apps UI standard and provides a mapping from Apps SDK patterns to MCP Apps keys, with OpenAI-only extensions as optional add-ons. The MCP community then formalized this as an official extension (modelcontextprotocol/ext-apps), explicitly describing MCP Apps as “inspired by MCP-UI and OpenAI's Apps SDK,” and standardizing the core portability/safety shape: sandboxed iframe rendering plus a host↔app messaging surface.
       virtuous_cycle:
         - "Tool providers can deliver better UX without per-host bespoke UI work."
         - "Hosts gain safer, richer interactions than pure JSON tool results."
         - "A common UI embedding model encourages more reusable tool apps."
+      links:
+        - label: "OpenAI: Introducing Apps in ChatGPT"
+          url: "https://openai.com/index/introducing-apps-in-chatgpt/"
+        - label: "OpenAI: MCP Apps in ChatGPT (Apps SDK docs)"
+          url: "https://developers.openai.com/apps-sdk/mcp-apps-in-chatgpt/"
+        - label: "MCP Docs: Apps Extension"
+          url: "https://modelcontextprotocol.io/docs/extensions/apps"
+        - label: "MCP Blog: MCP Apps Official Extension (Jan 26, 2026)"
+          url: "https://blog.modelcontextprotocol.io/posts/2026-01-26-mcp-apps/"
+        - label: "GitHub: modelcontextprotocol/ext-apps"
+          url: "https://github.com/modelcontextprotocol/ext-apps"
     animation:
       actors:
         - id: agent
@@ -680,20 +678,24 @@ technologies:
     tagline: Browser, Command Line, and Code
     layout: { col: 3, parent: tool-calling }
     detail:
-      links:
-        - { label: "Standard", url: "https://platform.openai.com/docs/guides/tools" }
       what_it_solves: >-
-        A small set of canonical action surfaces that tool ecosystems and
-        finetunes converge on: browser, command line, and code
-        execution/editing. These cover most real-world agent tasks.
+        Some tools turn out to be so useful that model makers have to make sure
+        during training that they work well, and client apps need standard ways
+        to provide them. Three key tools emerge: browser, command line, and code.
       how_its_standardizing: >-
-        Not a single spec; a convergence in agent platforms toward stable
-        tool categories and semantics (navigate/click/type; run commands;
-        apply patches/tests) because those cover most real-world tasks.
+        Convergence happened through training and deployment pressure rather than
+        a formal spec. Model cards (e.g., OpenAI's gpt-oss) make explicit that
+        models are fine-tuned to operate browser, terminal, and code-editing tools.
+        Agent platforms independently settled on similar action vocabularies
+        (navigate/click/type; run/exit/stdout; apply_patch/test) because these
+        abstractions cover most real-world workflows. The semantics, not the
+        wire format, are what standardized.
       virtuous_cycle:
-        - "Tool makers target the common surfaces to reach many agent hosts."
-        - "Agent hosts standardize these surfaces to maximize reliability and safety controls."
-        - "Model training/evaluation can focus on a stable set of action types."
+        - "Model developers train on stable tool categories to improve reliability."
+        - "Hosts expose consistent tool schemas, enabling cross-model portability."
+        - "Evaluation benchmarks align around the same action surfaces, reinforcing convergence."
+      links:
+        - { label: "OpenAI gpt-oss Model Card (example of tool-specific finetuning)", url: "https://openai.com/research/gpt-oss" }
     animation:
       actors:
         - id: agent
@@ -704,6 +706,9 @@ technologies:
           type: server
         - id: shell
           label: Command Tool
+          type: server
+        - id: code
+          label: Code Tool
           type: server
       scenes:
         - title: Browser interaction
@@ -716,10 +721,23 @@ technologies:
               to: browser
               label: navigate
               json_preview: '{"url":"https://example.com"}'
+              json_full: |
+                {
+                  "tool": "browser",
+                  "action": "navigate",
+                  "url": "https://example.com"
+                }
             - from: browser
               to: agent
               label: page loaded
               json_preview: '{"title":"Example Domain"}'
+              json_full: |
+                {
+                  "status": "ok",
+                  "title": "Example Domain",
+                  "url": "https://example.com",
+                  "content": "This domain is for use in illustrative examples ..."
+                }
         - title: Command execution
           description: >-
             The same agent switches to a shell tool using a familiar
@@ -730,11 +748,49 @@ technologies:
             - from: agent
               to: shell
               label: run
-              json_preview: '{"cmd":"pytest"}'
+              json_preview: '{"command":"ls"}'
+              json_full: |
+                {
+                  "tool": "shell",
+                  "command": "ls",
+                  "working_directory": "/home/user/project"
+                }
             - from: shell
               to: agent
               label: result
-              json_preview: '{"exit_code":0}'
+              json_preview: '{"exit_code":0,"stdout":"README.md\nsrc/\ntests/"}'
+              json_full: |
+                {
+                  "exit_code": 0,
+                  "stdout": "README.md\nsrc/\ntests/\npackage.json",
+                  "stderr": ""
+                }
+        - title: Code execution
+          description: >-
+            The agent runs code in a sandboxed interpreter for
+            computation, data analysis, or testing logic.
+          actors_visible: [agent, code]
+          messages:
+            - from: agent
+              to: code
+              label: execute
+              json_preview: '{"language":"python","code":"print(2+2)"}'
+              json_full: |
+                {
+                  "tool": "code",
+                  "language": "python",
+                  "code": "print(2 + 2)"
+                }
+            - from: code
+              to: agent
+              label: output
+              json_preview: '{"exit_code":0,"stdout":"4"}'
+              json_full: |
+                {
+                  "exit_code": 0,
+                  "stdout": "4",
+                  "stderr": ""
+                }
 
   # ── Instruction Surfaces ──────────────────────────────────────────
   - id: agents-md
@@ -742,7 +798,7 @@ technologies:
     icon: images/icon-agents-md.png
     icon_alt: "#"
     tagline: Project-local guidance for agents
-    layout: { parent: tool-calling, offset: 2 }
+    layout: { parent: standard-tool-surfaces }
     detail:
       links:
         - { label: "Standard", url: "https://agents.md/" }
@@ -852,7 +908,7 @@ technologies:
     icon: images/icon-llms-txt.png
     icon_alt: "//"
     tagline: AI-readable site index
-    layout: { parent: tool-calling, offset: 2 }
+    layout: { parent: standard-tool-surfaces }
     detail:
       links:
         - { label: "Standard", url: "https://llmstxt.org/" }
@@ -944,7 +1000,7 @@ technologies:
     icon: images/icon-agent-skills.png
     icon_alt: "pkg"
     tagline: Portable capability packages
-    layout: { parent: tool-calling, offset: 2 }
+    layout: { parent: agent-loop }
     detail:
       links:
         - { label: "Standard", url: "https://agentskills.io/specification" }

@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This is a presentation-quality interactive explainer showing how open interoperability protocols for AI agents emerge layer by layer — from the inference API through tool calling, MCP, agent-to-agent coordination, and domain protocols like commerce and identity. The goal is a chunky, gamelike tech-tree interface that works for both live presentation and individual exploration, letting people understand the high-level story at a glance or click in to see real protocol messages. It succeeds when a non-technical viewer can follow the animations and get "why this standard exists," and a technical viewer can click through to see actual JSON payloads; and both can understand how each step led to the next.
+This is a presentation-quality interactive explainer showing how open interoperability protocols for AI agents emerge layer by layer — from the inference API through tool calling, MCP, agent-to-agent coordination, and domain protocols like commerce and identity. The goal is a chunky, gamelike tech-tree interface that works for both live presentation and individual exploration, letting people understand the high-level story at a glance or click in to see real protocol messages. It succeeds when a non-technical viewer can follow the static scene diagrams and get "why this standard exists," and a technical viewer can click through to see actual JSON payloads; and both can understand how each step led to the next.
 
 ## Architecture
 
@@ -11,7 +11,7 @@ Hash-based routing: `#` = tree view, `#<protocol-id>` = detail view. Refreshing 
 ## Key files
 
 - `data.yaml` — **single source of truth** for all content: protocol metadata, tree layout positions, detail page text, and animation scene definitions. Content changes go here, not in JS.
-- `app.js` — generic renderer. Reads YAML, draws tree (CSS grid + SVG connections), renders detail pages with scrollytelling animation.
+- `app.js` — generic renderer. Reads YAML, draws tree (CSS grid + SVG connections), renders detail pages with static scene diagrams.
 - `style.css` — all styles. Brutalist aesthetic: monospace only, no border-radius, no gradients, no color, 2px solid borders, hover-invert to white-on-black.
 - `STYLE_GUIDE.md` — full rationale for visual and pedagogical choices.
 - `INFO_DUMP.md` — raw research notes on protocols (was `PROTOCOLS.md`).

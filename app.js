@@ -1,17 +1,13 @@
 /* ================================================================
    Agent Protocol Tech Tree — Application
-   Static SPA: hash-based routing, YAML data, scroll animation
+   Static SPA: hash-based routing, YAML data
    ================================================================ */
 
 // ── Global State ──────────────────────────────────────────────────
 let DATA = null;
 let currentView = null;   // 'tree' | 'detail' | 'reader'
 let currentProtocolId = null;
-let activeSceneIndex = 0;
 let scrollObserver = null;
-let fadeTimeout = null;
-let scrollRafId = null;
-const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const unlockedIds = new Set();
 
 // ── Layout Configuration ─────────────────────────────────────────
@@ -156,14 +152,6 @@ function cleanup() {
   if (scrollObserver) {
     scrollObserver.disconnect();
     scrollObserver = null;
-  }
-  if (fadeTimeout) {
-    clearTimeout(fadeTimeout);
-    fadeTimeout = null;
-  }
-  if (scrollRafId) {
-    cancelAnimationFrame(scrollRafId);
-    scrollRafId = null;
   }
 }
 
@@ -794,7 +782,6 @@ function buildRelHtml(techId) {
 function showDetail(techId) {
   currentView = 'detail';
   currentProtocolId = techId;
-  activeSceneIndex = 0;
 
   const tech = DATA.technologies.find(t => t.id === techId);
   if (!tech) { navigateTo(''); return; }
@@ -825,30 +812,15 @@ function showDetail(techId) {
 
   const relHtml = buildRelHtml(techId);
 
-  // How it works (scrollytelling animation) — skip if no animation
-  let animHtml = '';
+  // How it works (static scenes)
+  let scenesHtml = '';
   if (hasAnimation) {
     const scenes = tech.animation.scenes;
-    const stepsHtml = scenes.map((scene, i) => `
-      <div class="step${i === 0 ? ' active' : ''}" data-scene="${i}">
-        <div class="step__content">
-          <div class="step__number">Step ${i + 1} of ${scenes.length}</div>
-          <div class="step__title">${escapeHtml(scene.title)}</div>
-          <div class="step__description">${escapeHtml(scene.description)}</div>
-        </div>
-      </div>
-    `).join('');
-
-    animHtml = `
-      <div class="how-it-works detail-section">
+    scenesHtml = `
+      <div class="detail-section">
         <div class="section-label">How it works</div>
-        <div class="scrolly" id="scrolly">
-          <div class="scrolly__graphic" id="anim-stage">
-            <div class="anim-stage" id="anim-root"></div>
-          </div>
-          <div class="scrolly__steps" id="scrolly-steps">
-            ${stepsHtml}
-          </div>
+        <div class="reader-scenes">
+          ${scenes.map((scene, i) => renderStaticScene(scene, tech.animation.actors, i, scenes.length, techId)).join('')}
         </div>
       </div>`;
   }
@@ -869,9 +841,6 @@ function showDetail(techId) {
   const heroIconHtml = tech.icon
     ? `<img src="${escapeHtml(tech.icon)}" alt="${escapeHtml(tech.icon_alt)}" class="hero-icon-img">`
     : escapeHtml(tech.icon_alt);
-
-  // Reduced-motion check
-  const isReduced = prefersReducedMotion.matches;
 
   document.getElementById('app').innerHTML = `
     <div class="detail-page">
@@ -894,7 +863,7 @@ function showDetail(techId) {
           <div class="section-body">${escapeHtml(detail.what_it_solves)}</div>
         </div>
 
-        ${animHtml}
+        ${scenesHtml}
 
         <div class="detail-section">
           <div class="section-label">How it&rsquo;s standardizing</div>
@@ -906,25 +875,6 @@ function showDetail(techId) {
         ${linksHtml}
       </div>
     </div>`;
-
-  // Initialize animation if present
-  if (hasAnimation) {
-    initAnimation(tech);
-
-    if (!isReduced && window.innerWidth > 768) {
-      setupScrollObserver(tech);
-    } else {
-      // Stacked mode: clicking steps switches scenes
-      document.querySelectorAll('.step').forEach(step => {
-        step.addEventListener('click', () => {
-          const idx = parseInt(step.dataset.scene, 10);
-          transitionToScene(tech, idx);
-          document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-          step.classList.add('active');
-        });
-      });
-    }
-  }
 
   // Attach toolbar listeners
   attachToolbarListeners();
@@ -1271,213 +1221,6 @@ function setupReaderScrollSpy() {
   scrollObserver = {
     disconnect: () => {
       window.removeEventListener('scroll', onScroll);
-    }
-  };
-}
-
-// ================================================================
-//  ANIMATION ENGINE
-// ================================================================
-
-function initAnimation(tech) {
-  const root = document.getElementById('anim-root');
-  if (!root || !tech.animation) return;
-
-  // Reset previous visible actors for sparkle comparison
-  previousVisibleIds = [];
-
-  const allActors = tech.animation.actors;
-
-  // Create persistent actor elements
-  let actorsHtml = '<div class="anim-actors" id="anim-actors">';
-  allActors.forEach(actor => {
-    const iconSrc = DATA.actor_icons && DATA.actor_icons[actor.type];
-    const iconContent = iconSrc
-      ? `<img src="${escapeHtml(iconSrc)}" alt="${escapeHtml(actorIconText(actor.type))}" class="actor-icon-img">`
-      : escapeHtml(actorIconText(actor.type));
-    actorsHtml += `
-      <div class="anim-actor" id="actor-${actor.id}" data-id="${actor.id}" style="opacity:0;">
-        <div class="actor-icon">${iconContent}</div>
-        <div class="actor-label">${escapeHtml(actor.label)}</div>
-      </div>`;
-  });
-  actorsHtml += '</div>';
-
-  actorsHtml += '<div class="anim-messages" id="anim-messages"></div>';
-
-  root.innerHTML = actorsHtml;
-
-  // Show first scene
-  setActiveScene(tech, 0);
-}
-
-let previousVisibleIds = [];
-
-function setActiveScene(tech, index) {
-  activeSceneIndex = index;
-  const scene = tech.animation.scenes[index];
-  if (!scene) return;
-
-  const allActors = tech.animation.actors;
-  const visibleIds = scene.actors_visible;
-  const n = visibleIds.length;
-
-  // Determine which actors are newly visible (not in previous scene)
-  const newActorIds = scene.sparkle 
-    ? visibleIds.filter(id => !previousVisibleIds.includes(id))
-    : [];
-
-  // Position and show/hide actors
-  allActors.forEach(actor => {
-    const el = document.getElementById(`actor-${actor.id}`);
-    if (!el) return;
-    const visibleIdx = visibleIds.indexOf(actor.id);
-    if (visibleIdx >= 0) {
-      const leftPct = ((visibleIdx + 0.5) / n) * 100;
-      el.style.left = leftPct + '%';
-      el.style.opacity = '1';
-      // Add sparkle to newly visible actors
-      el.classList.toggle('actor-sparkle', newActorIds.includes(actor.id));
-    } else {
-      el.style.opacity = '0';
-      el.classList.remove('actor-sparkle');
-    }
-  });
-
-  // Render messages
-  renderMessages(scene, visibleIds, n);
-
-  // Remember current visible actors for next scene comparison
-  previousVisibleIds = [...visibleIds];
-}
-
-function renderMessages(scene, visibleIds, numActors) {
-  const container = document.getElementById('anim-messages');
-  if (!container) return;
-
-  let html = '';
-  scene.messages.forEach((msg, mi) => {
-    const fromIdx = visibleIds.indexOf(msg.from);
-    const toIdx = visibleIds.indexOf(msg.to);
-    if (fromIdx < 0 || toIdx < 0) return;
-
-    const fromPct = ((fromIdx + 0.5) / numActors) * 100;
-    const toPct = ((toIdx + 0.5) / numActors) * 100;
-    const leftPct = Math.min(fromPct, toPct);
-    const widthPct = Math.abs(toPct - fromPct);
-    const direction = toPct > fromPct ? 'right' : 'left';
-
-    // Use json_full if available, otherwise fall back to json_preview for modal content
-    const hasPreview = msg.json_preview && msg.json_preview.trim();
-    const detailContent = (msg.json_full && msg.json_full.trim()) || msg.json_preview || '';
-    const detailId = `msg-detail-${activeSceneIndex}-${mi}`;
-
-    html += `
-      <div class="anim-message">
-        <div class="msg-label" style="margin-left:${leftPct}%;width:${widthPct}%">
-          ${escapeHtml(msg.label)}
-        </div>
-        <div class="msg-arrow" style="margin-left:${leftPct}%;width:${widthPct}%">
-          <div class="msg-arrow-head ${direction}"></div>
-        </div>
-        ${hasPreview ? `
-          <div class="msg-preview expandable" style="margin-left:${Math.max(0, leftPct - 5)}%;width:${Math.min(100, widthPct + 10)}%"
-               onclick="toggleDetail('${detailId}', '${escapeHtml(msg.label).replace(/'/g, "\\'")}'); event.stopPropagation();" onkeydown="if(event.key==='Enter'){toggleDetail('${detailId}', '${escapeHtml(msg.label).replace(/'/g, "\\'")}'); event.stopPropagation();}" role="button" tabindex="0" title="Click to expand">
-            <code>${escapeHtml(msg.json_preview)}</code> <span class="expand-hint">[+]</span>
-          </div>
-          <div class="msg-detail" id="${detailId}" style="display:none;">${escapeHtml(detailContent.trim())}</div>` : ''}
-      </div>`;
-  });
-
-  container.innerHTML = html;
-}
-
-// ── Scroll-based Scene Switching ──────────────────────────────────
-
-function transitionToScene(tech, index) {
-  if (index === activeSceneIndex) return;
-
-  const root = document.getElementById('anim-root');
-  if (!root) { setActiveScene(tech, index); return; }
-
-  // Cancel any pending transition and remove leftover overlay
-  if (fadeTimeout) clearTimeout(fadeTimeout);
-  const oldOverlay = document.getElementById('anim-crossfade');
-  if (oldOverlay) oldOverlay.remove();
-
-  // Update index immediately so scroll handler doesn't retrigger
-  activeSceneIndex = index;
-
-  // Clone current content as a crossfade overlay
-  const overlay = root.cloneNode(true);
-  overlay.id = 'anim-crossfade';
-  overlay.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
-  overlay.style.position = 'absolute';
-  overlay.style.inset = '0';
-  overlay.style.transition = 'opacity 0.5s ease';
-  overlay.style.pointerEvents = 'none';
-  overlay.style.zIndex = '10';
-  overlay.style.background = 'var(--bg)';
-  root.appendChild(overlay);
-
-  // Disable actor transitions so new positions appear instantly (hidden under overlay)
-  root.querySelectorAll('.anim-actor').forEach(a => { a.style.transition = 'none'; });
-
-  // Update the real content underneath the overlay
-  setActiveScene(tech, index);
-
-  // Restore actor transitions then fade out overlay to reveal new scene
-  requestAnimationFrame(() => {
-    root.querySelectorAll('.anim-actor').forEach(a => { a.style.transition = ''; });
-    overlay.style.opacity = '0';
-  });
-
-  // Remove overlay after fade completes
-  fadeTimeout = setTimeout(() => {
-    overlay.remove();
-    fadeTimeout = null;
-  }, 550);
-}
-
-function setupScrollObserver(tech) {
-  const graphic = document.querySelector('.scrolly__graphic');
-  const steps = document.querySelectorAll('.step');
-  if (!graphic || !steps.length) return;
-
-  function checkScroll() {
-    scrollRafId = null;
-    const graphicRect = graphic.getBoundingClientRect();
-    const triggerLine = graphicRect.top + graphicRect.height / 2;
-
-    // Active step = last step whose top edge is above the graphic's vertical center
-    let newIdx = 0;
-    steps.forEach((step, i) => {
-      if (step.getBoundingClientRect().top < triggerLine) {
-        newIdx = i;
-      }
-    });
-
-    if (newIdx !== activeSceneIndex) {
-      transitionToScene(tech, newIdx);
-      steps.forEach(s => s.classList.remove('active'));
-      steps[newIdx].classList.add('active');
-    }
-  }
-
-  function onScroll() {
-    if (!scrollRafId) {
-      scrollRafId = requestAnimationFrame(checkScroll);
-    }
-  }
-
-  window.addEventListener('scroll', onScroll, { passive: true });
-  checkScroll(); // initial check
-
-  // Compatible with cleanup() which calls .disconnect()
-  scrollObserver = {
-    disconnect: () => {
-      window.removeEventListener('scroll', onScroll);
-      if (scrollRafId) { cancelAnimationFrame(scrollRafId); scrollRafId = null; }
     }
   };
 }
