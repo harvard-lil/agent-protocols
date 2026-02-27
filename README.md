@@ -1,6 +1,6 @@
 # Agent Protocol Tech Tree
 
-Live site: **https://jcushman.github.io/agent-protocols/**.
+Live site: **https://harvard-lil.github.io/agent-protocols/**.
 
 APTT is a visual, videogame-style tech tree of the key shared open protocols being developed by the companies and open source projects building AI agents.
 

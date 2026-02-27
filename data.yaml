@@ -1,12 +1,9 @@
 title: The Agent Protocol Tech Tree
 subtitle: How open standards for AI agents emerge layer by layer
 details: |
-  Open protocols emerge when decentralized parties benefit from speaking the same language.
-  If your software will be used more when it outputs data that other software can read,
-  and reads data that other software produces, all tools tend to converge on a common format.
-  AI agents are currently incentivized to converge in this way, and are rapidly exploring
-  and adopting standards. This tool explores
-  the standards they are converging on and why each layer came to be.
+  <p>Read the <a href="https://lil.law.harvard.edu/blog/2026/02/23/agent-protocols-tech-tree/">announcement blog post</a> for the full story.</p>
+  <p>An open protocol is a shared language software projects use to interoperate. Protocols offer an x-ray of an emerging technology &mdash; they show what the builder community cares about, what's already settled, and what's likely to come next.</p>
+  <p>AI agents are a distributed phenomenon changing faster than anyone can track, making protocols especially important. This tool explores the standards agents are converging on and why each layer came to be.</p>
 
 
 # ── Tree ──────────────────────────────────────────────────────────────

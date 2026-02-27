@@ -184,7 +184,7 @@ def generate_image(
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://github.com/jcushman/agent-protocols",
+            "HTTP-Referer": "https://github.com/harvard-lil/agent-protocols",
             "X-Title": "Agent Protocol Tech Tree - Image Generator",
         },
         json={

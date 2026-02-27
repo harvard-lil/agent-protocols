@@ -65,11 +65,11 @@ function getToolbarHtml() {
   let html = '<div class="toolbar" id="toolbar">';
   
   // GitHub link
-  html += `<a class="toolbar-link" href="https://github.com/jcushman/agent-protocols/" target="_blank" rel="noopener noreferrer">Github</a>`;
+  html += `<a class="toolbar-link" href="https://github.com/harvard-lil/agent-protocols/" target="_blank" rel="noopener noreferrer">Github</a>`;
   
   // Reader mode link
   html += `<span class="toolbar-sep">|</span>`;
-  html += `<a class="toolbar-link" href="#reader">Reader</a>`;
+  html += `<a class="toolbar-link" href="#reader">Reader Mode</a>`;
   
   // Fullscreen button (only if supported)
   if (document.fullscreenEnabled || document.webkitFullscreenEnabled) {
@@ -83,17 +83,16 @@ function getToolbarHtml() {
 
 function getAttributionHtml() {
   return `<div class="attribution">
-    <a href="https://lil.law.harvard.edu/" target="_blank" rel="noopener noreferrer" class="attribution-logo" aria-label="Library Innovation Lab">
+    <div class="attribution-text">
+      <div class="attribution-line"><a href="https://lil.law.harvard.edu/blog/2026/02/23/agent-protocols-tech-tree/" target="_blank" rel="noopener noreferrer">A project of the<br>Library Innovation Lab</a></div>
+    </div>
+    <a href="https://lil.law.harvard.edu/blog/2026/02/23/agent-protocols-tech-tree/" target="_blank" rel="noopener noreferrer" class="attribution-logo" aria-label="Library Innovation Lab">
       <svg role="img" width="40" height="56" viewBox="0 0 40 57" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
         <title>Library Innovation Lab</title>
         <path d="M0 8.09524H32V56.6667L40 48.5714V0H8L0 8.09524Z" fill="currentColor"></path>
         <path d="M16 16.1905H8V48.5714H24V40.4762H16V16.1905Z" fill="currentColor"></path>
       </svg>
     </a>
-    <div class="attribution-text">
-      <div class="attribution-line">A project of the <a href="https://lil.law.harvard.edu/" target="_blank" rel="noopener noreferrer">Library Innovation Lab</a></div>
-      <div class="attribution-line"><a href="mailto:lil@law.harvard.edu">lil@law.harvard.edu</a></div>
-    </div>
   </div>`;
 }
 
